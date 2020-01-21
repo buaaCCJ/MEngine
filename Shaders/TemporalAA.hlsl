@@ -20,14 +20,7 @@ Texture2D<float2> _MotionVectorTex : register(t2);
 Texture2D<float> _LastDepthTex : register(t3);
 Texture2D<float2> _LastMotionVectorTex : register(t4);
 Texture2D<float4> _HistoryTex : register(t5);
-
-SamplerState pointWrapSampler  : register(s0);
-SamplerState pointClampSampler  : register(s1);
-SamplerState linearWrapSampler  : register(s2);
-SamplerState linearClampSampler  : register(s3);
-SamplerState anisotropicWrapSampler  : register(s4);
-SamplerState anisotropicClampSampler  : register(s5);
-
+#include "Include/Sampler.cginc"
 
         struct appdata
 		{
@@ -159,12 +152,12 @@ float2 ReprojectedMotionVectorUV(float2 uv, out float outDepth)
         float neighborhood;
         const float2 k = _CameraDepthTexture_TexelSize.xy;
         uint i;
-        outDepth = _DepthTex.SampleLevel(linearClampSampler, uv, 0).x;
+        outDepth = _DepthTex.SampleLevel(bilinearClampSampler, uv, 0).x;
         float3 result = float3(0, 0,  outDepth);
         
         [unroll]
         for(i = 0; i < 8; ++i){
-            neighborhood = _DepthTex.SampleLevel(linearClampSampler, uv, 0, _OffsetArray[i]).x;
+            neighborhood = _DepthTex.SampleLevel(bilinearClampSampler, uv, 0, _OffsetArray[i]).x;
             result = lerp(result, float3(_OffsetArray[i], neighborhood), COMPARE_DEPTH(neighborhood, result.z));
         }
         return uv + result.xy * k;
@@ -181,22 +174,22 @@ float4 frag(v2f i) : SV_TARGET
         float depth;
 
         float2 closest = ReprojectedMotionVectorUV(i.texcoord, depth);
-        float2 velocity = _MotionVectorTex.SampleLevel(linearClampSampler, closest, 0).xy;// SAMPLE_TEXTURE2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture, closest).xy;
+        float2 velocity = _MotionVectorTex.SampleLevel(bilinearClampSampler, closest, 0).xy;// SAMPLE_TEXTURE2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture, closest).xy;
         float2 PrevCoord = (i.texcoord - velocity);
-        float4 MiddleCenter = _MainTex.SampleLevel(linearClampSampler, uv, 0);
+        float4 MiddleCenter = _MainTex.SampleLevel(bilinearClampSampler, uv, 0);
         if (PrevCoord.x > 1 || PrevCoord.y > 1 || PrevCoord.x < 0 || PrevCoord.y < 0) {
             return float4(MiddleCenter.xyz, 1);
         }
         
 
-        float4 TopLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(-1, -1));
-        float4 TopCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(0, -1));
-        float4 TopRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(1, -1));
-        float4 MiddleLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(-1,  0));
-        float4 MiddleRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(1,  0));
-        float4 BottomLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(-1, 1));
-        float4 BottomCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(0, 1));
-        float4 BottomRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, linearClampSampler, uv, int2(1, 1));
+        float4 TopLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(-1, -1));
+        float4 TopCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(0, -1));
+        float4 TopRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(1, -1));
+        float4 MiddleLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(-1,  0));
+        float4 MiddleRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(1,  0));
+        float4 BottomLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(-1, 1));
+        float4 BottomCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(0, 1));
+        float4 BottomRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, bilinearClampSampler, uv, int2(1, 1));
         
         float SampleWeights[9];
         SampleWeights[0] = HdrWeight4(TopLeft.rgb, ExposureScale);
@@ -248,14 +241,14 @@ float4 frag(v2f i) : SV_TARGET
         
         // HistorySample
         float2 prevDepthUV = PrevCoord + _Jitter - _LastJitter;
-        float lastFrameDepth = _LastDepthTex.SampleLevel(linearClampSampler, prevDepthUV, 0); //_LastFrameDepthTexture.Sample(sampler_LastFrameDepthTexture, prevDepthUV);
-        float2 lastFrameMV = _LastMotionVectorTex.SampleLevel(linearClampSampler, prevDepthUV, 0);//_LastFrameMotionVectors.Sample(sampler_LastFrameMotionVectors, prevDepthUV);
+        float lastFrameDepth = _LastDepthTex.SampleLevel(bilinearClampSampler, prevDepthUV, 0); //_LastFrameDepthTexture.Sample(sampler_LastFrameDepthTexture, prevDepthUV);
+        float2 lastFrameMV = _LastMotionVectorTex.SampleLevel(bilinearClampSampler, prevDepthUV, 0);//_LastFrameMotionVectors.Sample(sampler_LastFrameMotionVectors, prevDepthUV);
         float lastFrameMVLen = dot(lastFrameMV, lastFrameMV);
 
         [unroll]
         for(uint ite = 0; ite < 8; ++ite)
         {
-            float2 currentMV = _LastMotionVectorTex.SampleLevel(linearClampSampler, prevDepthUV, 0, _OffsetArray[ite]);// _LastFrameMotionVectors.Sample(sampler_LastFrameMotionVectors, prevDepthUV, _OffsetArray[ite]);
+            float2 currentMV = _LastMotionVectorTex.SampleLevel(bilinearClampSampler, prevDepthUV, 0, _OffsetArray[ite]);// _LastFrameMotionVectors.Sample(sampler_LastFrameMotionVectors, prevDepthUV, _OffsetArray[ite]);
             float currentMVLen = dot(currentMV, currentMV);
             lastFrameMVLen = max(currentMVLen, lastFrameMVLen);
         }
@@ -266,7 +259,7 @@ float4 frag(v2f i) : SV_TARGET
         worldPos /= worldPos.w; lastWorldPos /= lastWorldPos.w;
         worldPos -= lastWorldPos;
         float depthAdaptiveForce = 1 - saturate((dot(worldPos.xyz, worldPos.xyz) - 0.02) * 10);
-        float4 PrevColor = _HistoryTex.SampleLevel(linearClampSampler, PrevCoord, 0);//SAMPLE_TEXTURE2D(_HistoryTex, sampler_HistoryTex, PrevCoord);
+        float4 PrevColor = _HistoryTex.SampleLevel(bilinearClampSampler, PrevCoord, 0);//SAMPLE_TEXTURE2D(_HistoryTex, sampler_HistoryTex, PrevCoord);
         float colDiff = depthAdaptiveForce - PrevColor.w;//Whether current Color is brighter than last
         float tWeight = lerp(0.7, 0.9, saturate(tanh(colDiff * 2) * 0.5 + 0.5));
         depthAdaptiveForce = lerp(depthAdaptiveForce, PrevColor.w, tWeight);

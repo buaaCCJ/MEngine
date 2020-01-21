@@ -130,5 +130,13 @@ FrameResource::~FrameResource()
 	{
 		delete ite->second;
 	}
+	for (auto ite = perCameraDatas.begin(); ite != perCameraDatas.end(); ++ite)
+	{
+		auto& camRes = ite->second->perCameraResource;
+		for (auto secondIte = camRes.begin(); secondIte != camRes.end(); ++secondIte)
+		{
+			delete secondIte->second;
+		}
+	}
 	delete commmonThreadCommand;
 }

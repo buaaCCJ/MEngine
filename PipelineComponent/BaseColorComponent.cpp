@@ -6,12 +6,15 @@
 #include "../Singleton/Graphics.h"
 #include "../Singleton/PSOContainer.h"
 #include "GBufferComponent.h"
+#include "../LogicComponent/World.h"
 LightingComponent* lightComp;
 Shader* gbufferShader;
 std::unique_ptr<PSOContainer> drawRenderTargetContainer;
 UINT BaseColorComponent::_AllLight(0);
 UINT BaseColorComponent::_LightIndexBuffer(0);
 UINT BaseColorComponent::LightCullCBuffer(0);
+UINT BaseColorComponent::TextureIndices(0);
+
 void BaseColorComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	SetCPUDepending<LightingComponent>();
@@ -20,7 +23,7 @@ void BaseColorComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandL
 	tempRTRequire.resize(7);
 
 
-
+	TextureIndices = ShaderID::PropertyToID("TextureIndices");
 	tempRTRequire[0].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRTRequire[0].uID = ShaderID::PropertyToID("_CameraRenderTarget");
 	TemporalResourceCommand& albedoBuffer = tempRTRequire[1];
@@ -61,12 +64,44 @@ void BaseColorComponent::Dispose()
 	drawRenderTargetContainer = nullptr;
 }
 
+
+struct TextureIndices
+{
+	UINT _UVTex;
+	UINT _TangentTex;
+	UINT _NormalTex;
+	UINT _DepthTex;
+	UINT _ShaderIDTex;
+	UINT _MaterialIDTex;
+};
+#define TEX_COUNT 6
 struct BaseColorFrameData : public IPipelineResource
 {
-	DescriptorHeap heap;
+	UploadBuffer texIndicesBuffer;
+	UINT descs[TEX_COUNT];
 	BaseColorFrameData(ID3D12Device* device)
 	{
-		heap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6, true);
+		texIndicesBuffer.Create(
+			device, 1, true, sizeof(TextureIndices)
+		);
+		World* world = World::GetInstance();
+		auto func = [&](UINT i)->void {
+			descs[i] = world->GetDescHeapIndexFromPool();
+		};
+		InnerLoop<decltype(func), TEX_COUNT>(func);
+		TextureIndices ind;
+		memcpy(&ind._UVTex, descs, sizeof(UINT) * TEX_COUNT);
+		texIndicesBuffer.CopyData(0, &ind);
+	}
+
+	~BaseColorFrameData()
+	{
+		World* world = World::GetInstance();
+		auto func = [&](UINT i)->void
+		{
+			world->ReturnDescHeapIndexToPool(descs[i]);
+		};
+		InnerLoop<decltype(func), TEX_COUNT>(func);
 	}
 };
 
@@ -78,6 +113,7 @@ std::vector<TemporalResourceCommand>& BaseColorComponent::SendRenderTextureRequi
 	ite->descriptor.rtDesc.height = evt.height;
 	return tempRTRequire;
 }
+
 
 struct BaseColorRunnable
 {
@@ -108,19 +144,22 @@ struct BaseColorRunnable
 #endif
 			return nullptr;	//Get Error if there is no light coponent in pipeline
 		});
-		uvTex->BindColorBufferToSRVHeap(&frameData->heap, 0, device);
-		tangentTex->BindColorBufferToSRVHeap(&frameData->heap, 1, device);
-		normalTex->BindColorBufferToSRVHeap(&frameData->heap, 2, device);
-		depthTex->BindColorBufferToSRVHeap(&frameData->heap, 3, device);
-		shaderIDtex->BindColorBufferToSRVHeap(&frameData->heap, 4, device);
-		materialIDtex->BindColorBufferToSRVHeap(&frameData->heap, 5, device);
-		gbufferShader->BindRootSignature(commandList, &frameData->heap);
+		DescriptorHeap* worldHeap = World::GetInstance()->GetGlobalDescHeap();
+		uvTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[0], device);
+		tangentTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[1], device);
+		normalTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[2], device);
+		depthTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[3], device);
+		shaderIDtex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[4], device);
+		materialIDtex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[5], device);
+		gbufferShader->BindRootSignature(commandList, worldHeap);
 		ConstBufferElement ele = res->cameraCBs[cam->GetInstanceID()];
 		gbufferShader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), ele.buffer, ele.element);
-		gbufferShader->SetResource(commandList, ShaderID::GetMainTex(), &frameData->heap, 0);
+		gbufferShader->SetResource(commandList, ShaderID::GetMainTex(), worldHeap, 0);
 		gbufferShader->SetStructuredBufferByAddress(commandList, BaseColorComponent::_AllLight, lightFrameData->lightsInFrustum.GetAddress(0));
 		gbufferShader->SetStructuredBufferByAddress(commandList, BaseColorComponent::_LightIndexBuffer, lightComp->lightIndexBuffer->GetAddress(0, 0));
 		gbufferShader->SetResource(commandList, BaseColorComponent::LightCullCBuffer, &lightFrameData->lightCBuffer, 0);
+		gbufferShader->SetResource(commandList, BaseColorComponent::TextureIndices, &frameData->texIndicesBuffer, 0);
+
 		Graphics::Blit(
 			commandList,
 			device,

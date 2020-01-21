@@ -302,14 +302,15 @@ void GetGBufferRenderingShader(ID3D12Device* device, JobBucket* bucket)
 	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	p.depthStencilState = dsDesc;
 
-	const UINT SHADER_VAR_COUNT = 5;
+	const UINT SHADER_VAR_COUNT = 6;
 	ShaderVariable var[SHADER_VAR_COUNT] =
 	{
 		Texture2D::GetShaderVar(6, 0, 0, "_MainTex"),
 		ConstantBuffer::GetShaderVar(0, 0, "Per_Camera_Buffer"),
 		StructuredBuffer::GetShaderVar(0, 1,"_AllLight"),
 		StructuredBuffer::GetShaderVar(1,1,"_LightIndexBuffer"),
-		ConstantBuffer::GetShaderVar(1, 0,"LightCullCBuffer")
+		ConstantBuffer::GetShaderVar(1, 0,"LightCullCBuffer"),
+		ConstantBuffer::GetShaderVar(2, 0, "TextureIndices")
 	};
 
 	Shader* gbufferShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
@@ -404,8 +405,13 @@ void GetClusterBasedLightCullingShader(ID3D12Device* device, JobBucket* bucket)
 
 void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 {
-	JobBucket* bucket;
+#ifdef NDEBUG
+#define SHADER_MULTICORE_COMPILE	
+#endif
+	JobBucket* bucket = nullptr;
+#ifdef SHADER_MULTICORE_COMPILE
 	bucket = jobSys->GetJobBucket();
+#endif
 	mShaders.reserve(50);
 	mComputeShaders.reserve(50);
 	GetOpaqueStandardShader(device, bucket);
@@ -415,7 +421,9 @@ void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 	GetTemporalAAShader(device, bucket);
 	GetClusterBasedLightCullingShader(device, bucket);
 	GetGBufferRenderingShader(device, bucket);
+#ifdef SHADER_MULTICORE_COMPILE
 	jobSys->ExecuteBucket(bucket, 1);
+#endif
 }
 
 void ShaderCompiler::Dispose()

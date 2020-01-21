@@ -247,7 +247,7 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 			depthStencilDesc.DepthOrArraySize = arraySize;
 			depthStencilDesc.MipLevels = 1;
 			depthStencilDesc.Format = mFormat;
-
+			mFormat = mDepthFormat;
 			depthStencilDesc.SampleDesc.Count = 1;
 			depthStencilDesc.SampleDesc.Quality = 0;
 			depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;

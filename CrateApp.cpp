@@ -102,12 +102,14 @@ CrateApp::~CrateApp()
 	if (md3dDevice != nullptr)
 		FlushCommandQueue();
 	RenderPipeline::DestroyInstance();
-	ShaderCompiler::Dispose();
-	World::DestroyInstance();
-	for (int i = 0; i < FrameResource::mFrameResources.size(); ++i)
+	/*	for (int i = 0; i < FrameResource::mFrameResources.size(); ++i)
 	{
 		FrameResource::mFrameResources[i] = nullptr;
 	}
+	ShaderCompiler::Dispose();
+	World::DestroyInstance();*/
+	//Should Destroy
+	//But I dont want to
 	pipelineJobSys = nullptr;
 }
 

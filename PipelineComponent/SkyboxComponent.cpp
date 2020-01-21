@@ -11,8 +11,6 @@ using namespace DirectX;
 struct SkyboxBuffer
 {
 	XMFLOAT4X4 invvp;
-	float deltaTime;
-	float time;
 };
 
 class SkyboxPerFrameData : public IPipelineResource
@@ -78,7 +76,6 @@ public:
 	FrameResource* resource;
 	ID3D12Device* device;
 	Camera* cam;
-	float deltaTime, time;
 	void operator()()
 	{
 		commandList->ResetCommand();
@@ -103,8 +100,6 @@ public:
 		XMMATRIX viewProj = XMMatrixMultiply(view, cam->GetProj());
 		SkyboxBuffer bf;
 		memcpy(&bf.invvp, &XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj), sizeof(XMFLOAT4X4));
-		bf.deltaTime = deltaTime;
-		bf.time = time;
 		frameData->posBuffer.CopyData(0, &bf);
 		ID3D12GraphicsCommandList* cmdList = commandList->GetCmdList();
 		gbufferTex->SetViewport(cmdList);
@@ -151,9 +146,7 @@ void SkyboxComponent::RenderEvent(EventData& data, ThreadCommand* commandList)
 			 commandList,
 			 data.resource,
 			 data.device,
-			 data.camera,
-			 data.deltaTime,
-			 data.time
+			 data.camera
 		});
 }
 ObjectPtr<Texture> testTex;

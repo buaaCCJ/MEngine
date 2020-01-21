@@ -18,7 +18,7 @@ bool d3dUtil::IsKeyDown(int vkeyCode)
     return (GetAsyncKeyState(vkeyCode) & 0x8000) != 0;
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> d3dUtil::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 9> d3dUtil::GetStaticSamplers()
 {
 	// Applications usually only need a handful of samplers.  So just define them all up front
 	// and keep them available as part of the root signature.  
@@ -37,22 +37,36 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> d3dUtil::GetStaticSamplers()
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
 
-	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+	const CD3DX12_STATIC_SAMPLER_DESC bilinearWrap(
 		2, // shaderRegister
+		D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC bilinearClamp(
+		3, // shaderRegister
+		D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC trilinearWrap(
+		4, // shaderRegister
 		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
-	const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
-		3, // shaderRegister
+	const CD3DX12_STATIC_SAMPLER_DESC trilinearClamp(
+		5, // shaderRegister
 		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
-		4, // shaderRegister
+		6, // shaderRegister
 		D3D12_FILTER_ANISOTROPIC, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
@@ -61,7 +75,7 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> d3dUtil::GetStaticSamplers()
 		16);                               // maxAnisotropy
 
 	const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
-		5, // shaderRegister
+		7, // shaderRegister
 		D3D12_FILTER_ANISOTROPIC, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
@@ -70,16 +84,20 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> d3dUtil::GetStaticSamplers()
 		16);                                // maxAnisotropy
 
 	const CD3DX12_STATIC_SAMPLER_DESC linearShadowClamp(
-		6,
-		D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		8,
+		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		0,
+		1,
+		D3D12_COMPARISON_FUNC_LESS); // addressW
 
 
 	return {
 		pointWrap, pointClamp,
-		linearWrap, linearClamp,
+		bilinearWrap, bilinearClamp,
+		trilinearWrap, trilinearClamp,
 		anisotropicWrap, anisotropicClamp, linearShadowClamp };
 }
 
@@ -158,9 +176,9 @@ ComPtr<ID3DBlob> d3dUtil::CompileShader(
 	const std::string& entrypoint,
 	const std::string& target)
 {
-	UINT compileFlags = 0;
+	UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #if defined(DEBUG) || defined(_DEBUG)  
-	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+	compileFlags |= D3DCOMPILE_DEBUG;
 #endif
 
 	HRESULT hr = S_OK;

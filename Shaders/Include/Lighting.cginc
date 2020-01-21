@@ -28,9 +28,9 @@ struct LightCommand{
 	float spotRadius;
 	float3 __align;
 };
-inline uint GetIndex(uint3 id, const uint3 size, const int multiply){
-    const uint3 multiValue = uint3(1, size.x, size.x * size.y) * multiply;
-    return dot(id, multiValue);
+uint GetIndex(uint3 id, uint3 size, uint multiply){
+	uint3 multiValue = uint3(1, size.x, size.x * size.y) * multiply;
+    return (uint)dot(id, multiValue);
 }
 
 float3 CalculateLocalLight(
@@ -47,6 +47,7 @@ float3 CalculateLocalLight(
 	float ShadowTrem = 0;
 	float3 ShadingColor = 0;
 	float rate = pow(max(0, (linearDepth - cameraNear) /(lightFar - cameraNear)), 1.0 / CLUSTERRATE);
+	rate = max(0, rate);
     if(rate > 1) return 0;
 	uint3 voxelValue = uint3((uint2)(uv * float2(XRES, YRES)), (uint)(rate * ZRES));
 	uint sb = GetIndex(voxelValue, VOXELSIZE, (MAXLIGHTPERCLUSTER + 1));

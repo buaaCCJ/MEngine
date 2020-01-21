@@ -24,7 +24,7 @@ constexpr void JobNode::Create(const Func& func, VectorPool* vectorPool, std::mu
 	{
 		assert(false);
 		ptr = new Func{
-			std::move(func)
+			std::move((Func&)func)
 		};
 		destructorFunc = [](void* currPtr)->void
 		{
@@ -35,7 +35,7 @@ constexpr void JobNode::Create(const Func& func, VectorPool* vectorPool, std::mu
 	{
 		ptr = &stackArr;
 		new (ptr)Func{
-			std::move(func)
+			std::move((Func&)func)
 		};
 		destructorFunc = [](void* currPtr)->void
 		{
