@@ -1,0 +1,81 @@
+cbuffer CullBuffer : register(b0)
+{
+    float4 planes[6];
+    //Align
+    float3 _FrustumMinPoint;
+    uint _Count;
+    //Align
+    float3 _FrustumMaxPoint;
+};
+struct MultiDrawCommand
+{
+    uint value[16]; //same size as CPU
+};
+struct ObjectData
+{
+    float4x4 localToWorld;
+    float3 boundingCenter;
+    float3 boundingExtent;
+};
+StructuredBuffer<MultiDrawCommand> _InputBuffer : register(t0);
+StructuredBuffer<ObjectData> _InputDataBuffer : register(t1);
+RWStructuredBuffer<MultiDrawCommand> _OutputBuffer : register(u0);
+RWStructuredBuffer<uint> _CountBuffer : register(u1);
+
+float PlaneTest(float3 localPosition, float3 extent, float4x4 localToWorld){
+    float3 position = mul(localToWorld, float4(localPosition, 1)).xyz;
+    float3 worldMin = position;
+    float3 worldMax = position;
+    uint i;
+    
+    const float3 offsetRate[8] = {
+        float3(1, 1, 1),
+        float3(1, 1, -1),
+        float3(1, -1, 1),
+        float3(1, -1, -1),
+        float3(-1, 1, 1),
+        float3(-1, 1, -1),
+        float3(-1, -1, 1),
+        float3(-1, -1, -1)
+    };
+   
+    [unroll]
+    for(i = 0; i < 8; ++i)
+    {
+        float3 currPos = mul(localToWorld, float4(localPosition + extent * offsetRate[i], 1)).xyz;
+        worldMin = min(worldMin, currPos);
+        worldMax = max(worldMax, currPos);
+    }
+    float outOfRange = dot(_FrustumMinPoint.xyz > worldMax, 1) + dot(_FrustumMaxPoint.xyz < worldMin, 1);
+    if(outOfRange > 0.5) return 0;
+    [unroll]
+    for(i = 0; i < 6; ++i)
+    {
+        float4 plane = planes[i];
+        float3 absNormal = abs(mul(plane.xyz, (float3x3)localToWorld));
+        if((dot(position, plane.xyz) - dot(absNormal, extent)) > -plane.w)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint id : SV_DISPATCHTHREADID)
+{
+    if(id >= _Count) return;
+    uint count;
+    ObjectData data = _InputDataBuffer[id];
+    if(PlaneTest(data.boundingCenter, data.boundingExtent, data.localToWorld) > 0.5)
+    {
+        InterlockedAdd(_CountBuffer[0], 1, count);
+        _OutputBuffer[count] = _InputBuffer[id];
+    }
+}
+
+[numthreads(1,1,1)]
+void Clear(uint id : SV_DISPATCHTHREADID)
+{
+    _CountBuffer[0] = 0;
+}

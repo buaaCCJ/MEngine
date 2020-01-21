@@ -1,0 +1,160 @@
+#include "Include/Lighting.cginc"
+#include "Include/Plane.cginc"
+cbuffer LightCullCBuffer : register(b0)
+{
+    float4x4 _InvVP;
+	float4 _CameraNearPos;
+	float4 _CameraFarPos;
+	float4 _ZBufferParams;
+	float3 _CameraForward;
+	uint _LightCount;
+};
+RWTexture2D<float4> _MainTex[2] : register(u0, space0);//All Random Write Texture
+
+RWTexture3D<float4> _XYPlaneTexture : register(u0, space0);
+RWTexture2D<float4> _ZPlaneTexture : register(u1, space0);
+
+RWStructuredBuffer<uint> _LightIndexBuffer : register(u0, space1);
+
+StructuredBuffer<LightCommand> _AllLight : register(t0);
+
+
+inline float2 LinearEyeDepth( float2 z )
+{
+    return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+}
+inline float2 EyeDepthToProj(float2 lin)
+            {
+                return (1/lin - _ZBufferParams.w) / _ZBufferParams.z;
+            }
+
+void GetMinMaxFrustum(float4 uv, float2 minMaxDepth, out float3 minValue, out float3 maxValue)
+{
+	uv = uv * 2 - 1;
+	float4 worldPos = mul(_InvVP, float4(uv.xy, minMaxDepth.x, 1));
+	worldPos /= worldPos.w;
+	minValue = worldPos;
+	maxValue = worldPos;
+
+	worldPos = mul(_InvVP, float4(uv.xy, minMaxDepth.y, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.zw, minMaxDepth.x, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.zw, minMaxDepth.y, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.xw, minMaxDepth.x, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.xw, minMaxDepth.y, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.zy, minMaxDepth.x, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+
+	worldPos = mul(_InvVP, float4(uv.zy, minMaxDepth.y, 1));
+	worldPos /= worldPos.w;
+	minValue = min(minValue, worldPos);
+	maxValue = max(maxValue, worldPos);
+}
+
+
+[numthreads(XRES, YRES, 1)]
+void SetXYPlane(uint2 id : SV_DispatchThreadID)
+{
+	float2 leftBotUV = id / float2(XRES, YRES);
+	float2 rightTopUV = leftBotUV + (1.0 / float2(XRES, YRES));
+	leftBotUV = leftBotUV * 2 - 1;
+	rightTopUV = rightTopUV * 2 - 1;
+	const float nearZ = 1;
+	_XYPlaneTexture[uint3(id, 0)] = GetPlane(mul(_InvVP, float4(1, rightTopUV.y, nearZ, 1)), mul(_InvVP, float4(-1, rightTopUV.y, nearZ, 1)), mul(_InvVP, float4(0, rightTopUV.y, 0.5, 1)));                  //TOP
+	_XYPlaneTexture[uint3(id, 1)] = GetPlane(mul(_InvVP, float4(-1, leftBotUV.y, nearZ, 1)), mul(_InvVP, float4(1, leftBotUV.y, nearZ, 1)), mul(_InvVP, float4(0, leftBotUV.y, 0.5, 1)));                  //DOWN
+	_XYPlaneTexture[uint3(id, 2)] = GetPlane(mul(_InvVP, float4(leftBotUV.x, 1, nearZ, 1)), mul(_InvVP, float4(leftBotUV.x, -1, nearZ, 1)), mul(_InvVP, float4(leftBotUV.x, 0, 0.5, 1)));        //LEFT
+	_XYPlaneTexture[uint3(id, 3)] = GetPlane(mul(_InvVP, float4(rightTopUV.x, -1, nearZ, 1)), mul(_InvVP, float4(rightTopUV.x, 1, nearZ, 1)), mul(_InvVP, float4(rightTopUV.x, 0, 0.5, 1)));            //RIGHT
+
+}
+
+[numthreads(ZRES, 1, 1)]
+void SetZPlane(uint id : SV_DISPATCHTHREADID)
+{
+	float3 backPos = lerp(_CameraNearPos.xyz, _CameraFarPos.xyz, pow(id / (float)ZRES, CLUSTERRATE));
+	float3 forwardPos = lerp(_CameraNearPos.xyz, _CameraFarPos.xyz, pow((id + 1.0) / (float)ZRES, CLUSTERRATE));
+	_ZPlaneTexture[uint2(id, 0)] = GetPlane(-_CameraForward, backPos);
+	_ZPlaneTexture[uint2(id, 1)] = GetPlane(_CameraForward, forwardPos);
+}
+
+
+[numthreads(XRES, YRES, 1)]
+void CBDR(uint3 id : SV_DISPATCHTHREADID)
+{
+	float4 planes[6];
+	uint i;
+	planes[0] = _ZPlaneTexture[uint2(id.z, 0)];
+	planes[1] = _ZPlaneTexture[uint2(id.z, 1)];
+	planes[2] = _XYPlaneTexture[uint3(id.xy, 0)];
+	planes[3] = _XYPlaneTexture[uint3(id.xy, 1)];
+	planes[4] = _XYPlaneTexture[uint3(id.xy, 2)];
+	planes[5] = _XYPlaneTexture[uint3(id.xy, 3)];
+	
+	float backPos = lerp(_CameraNearPos.w, _CameraFarPos.w, pow(id.z / (float)ZRES, CLUSTERRATE));
+	float forwardPos = lerp(_CameraNearPos.w, _CameraFarPos.w, pow((id.z + 1.0) / (float)ZRES, CLUSTERRATE));
+	float4 uv = float4(id.xy, id.xy + 1) / float4(XRES, YRES, XRES, YRES);
+	float2 depth = EyeDepthToProj(float2(backPos, forwardPos));
+	float3 minPoint, maxPoint;
+	GetMinMaxFrustum(uv, depth, minPoint, maxPoint);
+
+
+	uint sBufferIndex = GetIndex(id, VOXELSIZE, (MAXLIGHTPERCLUSTER + 1)) + 1;
+	uint clusterCount = 0;
+    [loop]
+    for(i = 0; i < _LightCount; ++i)
+    {
+        LightCommand light = _AllLight[i];
+       float3 sphereMax = light.position.xyz + light.range;
+	 	float3 sphereMin = light.position.xyz - light.range;
+		float outOfRange = dot(sphereMax < minPoint, 1) + dot(sphereMin > maxPoint, 1);
+         
+        if(outOfRange < 0.5)
+        {
+        switch(light.lightType)
+        {
+            case 0: //Point
+            {
+		        if (SphereIntersect(float4(light.position, light.range), planes) > 0.5) {
+			        _LightIndexBuffer[sBufferIndex + clusterCount] = i;
+			        clusterCount++;
+		        }
+            }
+            break;
+            case 1: //Spot
+            {
+                Cone c;
+                c.vertex = light.position;
+                c.height = light.range;
+                c.direction = light.direction;
+                c.radius = light.spotRadius;
+                if (ConeIntersect(c, planes) > 0.5) {
+			        _LightIndexBuffer[sBufferIndex + clusterCount] = i;
+			        clusterCount++;
+		        }
+            }
+            break;
+        }
+        }
+    }
+	_LightIndexBuffer[sBufferIndex - 1] = clusterCount + sBufferIndex;
+}
