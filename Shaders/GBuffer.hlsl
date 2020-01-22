@@ -1,4 +1,9 @@
     #include "Include/Lighting.cginc"
+	#include "Include/Sampler.cginc"
+	#include "Include/Common.hlsl"
+	#include "Include/Montcalo_Library.hlsl"
+	#include "Include/BSDF_Library.hlsl"
+	#include "Include/ShadingModel.hlsl"
 	struct appdata
 		{
 			float4 vertex : POSITION;
@@ -11,11 +16,10 @@
 			float2 texcoord : TEXCOORD;
 		};
 
-        Texture2D _MainTex[6] : register(t0, space0);   //Sign
-		
-		Texture2D<float4> _ColorTex[6] : register(t0, space0);
-		Texture2D<float> _GreyTex[6] : register(t0, space0);
-		Texture2D<uint> _IntegerTex[6] : register(t0, space0);
+		Texture2D<float4> _MainTex[6] : register(t0, space0);
+		Texture2D<float> _GreyTex[6] : register(t0, space1);
+		Texture2D<uint> _IntegerTex[6] : register(t0, space2);
+		TextureCube<float4> _Cubemap[6] : register(t0, space3);
 
 cbuffer Per_Camera_Buffer : register(b0)
 {
@@ -42,6 +46,13 @@ cbuffer LightCullCBuffer : register(b1)
 	float4 _ZBufferParams;
 	float3 _CameraForward;
 	uint _LightCount;
+	float3 _SunColor;
+	uint _SunEnabled;
+	float3 _SunDir;
+	uint _SunShadowEnabled;
+	uint4 _ShadowmapIndices;
+	float4 _CascadeDistance;
+	float4x4 _ShadowMatrix[4];
 };
 
 cbuffer TextureIndices : register(b2)
@@ -52,7 +63,7 @@ cbuffer TextureIndices : register(b2)
     uint _DepthTex ;
     uint _ShaderIDTex ;
     uint _MaterialIDTex;
-
+	uint _SkyboxTex;
 };
 
 inline float LinearEyeDepth( float z )
@@ -60,9 +71,8 @@ inline float LinearEyeDepth( float z )
     return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
 }
 
-
-StructuredBuffer<LightCommand> _AllLight : register(t0, space1);
-StructuredBuffer<uint> _LightIndexBuffer : register(t1, space1);
+StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
+StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 
 		v2f vert(appdata v)
 		{
@@ -74,27 +84,31 @@ StructuredBuffer<uint> _LightIndexBuffer : register(t1, space1);
 
         float4 frag(v2f i) : SV_TARGET
         {
-			float4 uv = _ColorTex[_UVTex][i.vertex.xy];
-			float4 tangent = _ColorTex[_TangentTex][i.vertex.xy] * 2 - 1;
-			float3 normal = normalize(_ColorTex[_NormalTex][i.vertex.xy].xyz * 2 - 1);
 			float depth = _GreyTex[_DepthTex][i.vertex.xy];
+			float4 uv = _MainTex[_UVTex][i.vertex.xy];
+			float4 tangent = _MainTex[_TangentTex][i.vertex.xy] * 2 - 1;
+			float3 worldNormal = normalize(_MainTex[_NormalTex][i.vertex.xy].xyz * 2 - 1);
+			float4 worldPos = mul(_InvVP, float4((i.texcoord * 2 - 1) * float2(1, -1), depth, 1));
+			worldPos /= worldPos.w;
+			float3 viewDir = normalize(worldSpaceCameraPos - worldPos.xyz);
 			uint shaderID = _IntegerTex[_ShaderIDTex][i.vertex.xy];
 			uint matID = _IntegerTex[_MaterialIDTex][i.vertex.xy];
 			float linearEyeDepth = LinearEyeDepth(depth);
-			float4 worldPos = mul(gInvViewProj, float4((i.texcoord * 2 - 1) * float2(1, -1), depth, 1));
-			worldPos /= worldPos.w;
-			float3 viewDir = normalize(worldSpaceCameraPos - worldPos.xyz);
+
+			float3 refl = reflect(-viewDir, worldNormal);
+			float4 skyboxColor = _Cubemap[_SkyboxTex].SampleLevel(trilinearClampSampler, refl, 3);
 			float3 lightColor = CalculateLocalLight(
 				i.texcoord,
 				worldPos,
 				linearEyeDepth,
-				normal,
+				worldNormal,
 				viewDir,
 				_CameraNearPos.w,
 				_CameraFarPos.w,
 				_LightIndexBuffer,
 				_AllLight
 			);
-
-			return float4(normal, 1);
+		
+			
+			return skyboxColor;//float4(worldNormal, 1);
         }

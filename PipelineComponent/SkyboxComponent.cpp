@@ -171,15 +171,15 @@ void SkyboxComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList
 	tempRT[2].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[2].uID = ShaderID::PropertyToID("_CameraDepthTexture");
 
-	ObjectPtr<Texture> testTex = new Texture(
+	skyboxTex = new Texture(
 		device,
 		nullptr,
 		"grasscube1024",
-		L"Resource/Cubemap.vtex",
+		L"Resource/Sky.vtex",
 		TextureType::Cubemap
 	);
 	defaultSkybox = new Skybox(
-		testTex,
+		skyboxTex,
 		device
 	);
 }

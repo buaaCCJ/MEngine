@@ -90,6 +90,7 @@ private:
 	UINT depthSlice;
 	UINT mWidth = 0;
 	UINT mHeight = 0;
+	UINT mipCount;
 	RenderTextureUsage usage;
 	DXGI_FORMAT mFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mColorResource;
@@ -106,18 +107,20 @@ public:
 		UINT height,
 		RenderTextureFormat rtFormat,
 		RenderTextureDimension type,
-		int depthCount,
-		int mipCount,
+		UINT depthCount,
+		UINT mipCount,
 		RenderTextureState initState = RenderTextureState::Render_Target
 	);
+	constexpr UINT GetMipCount() { return mipCount; }
 	void BindRTVToHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device, UINT slice);
 	constexpr UINT GetWidth() { return mWidth; }
 	constexpr UINT GetHeight() { return mHeight; }
+	constexpr UINT GetDepthSlice() { return depthSlice; }
 	void SetViewport(ID3D12GraphicsCommandList* commandList);
-	ID3D12Resource* GetColorResource() const{ return mColorResource.Get(); }
+	ID3D12Resource* GetColorResource() const { return mColorResource.Get(); }
 	D3D12_CPU_DESCRIPTOR_HANDLE GetColorDescriptor(UINT slice);
 	void BindColorBufferToSRVHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device);
 	void BindUAVToHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device, UINT targetMipLevel);
 	void ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice);
-	DXGI_FORMAT GetColorFormat() const{ return mFormat; }
+	DXGI_FORMAT GetColorFormat() const { return mFormat; }
 };

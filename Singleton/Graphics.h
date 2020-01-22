@@ -37,8 +37,8 @@ public:
 
 	static void CopyTexture(
 		ID3D12GraphicsCommandList* commandList,
-		RenderTexture* source, CopyTarget sourceTarget, UINT sourceMipLevel,
-		RenderTexture* dest, CopyTarget destTarget, UINT destMipLevel);
+		RenderTexture* source, CopyTarget sourceTarget, UINT sourceSlice, UINT sourceMipLevel,
+		RenderTexture* dest, CopyTarget destTarget, UINT destSlice, UINT destMipLevel);
 
 	static void CopyBufferToTexture(
 		ID3D12GraphicsCommandList* commandList,

@@ -8,6 +8,13 @@ cbuffer LightCullCBuffer : register(b0)
 	float4 _ZBufferParams;
 	float3 _CameraForward;
 	uint _LightCount;
+	float3 _SunColor;
+	uint _SunEnabled;
+	float3 _SunDir;
+	uint _SunShadowEnabled;
+	uint4 _ShadowmapIndices;
+	float4 _CascadeDistance;
+	float4x4 _ShadowMatrix[4];
 };
 RWTexture2D<float4> _MainTex[2] : register(u0, space0);//All Random Write Texture
 

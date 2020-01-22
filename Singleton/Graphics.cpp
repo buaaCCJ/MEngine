@@ -58,15 +58,17 @@ inline void Copy(
 
 void Graphics::CopyTexture(
 	ID3D12GraphicsCommandList* commandList,
-	RenderTexture* source, CopyTarget sourceTarget, UINT sourceMipLevel,
-	RenderTexture* dest, CopyTarget destTarget, UINT destMipLevel)
+	RenderTexture* source, CopyTarget sourceTarget, UINT sourceSlice, UINT sourceMipLevel,
+	RenderTexture* dest, CopyTarget destTarget, UINT destSlice, UINT destMipLevel)
 {
+	if (source->GetType() == RenderTextureDimension_Tex2D) sourceSlice = 0;
+	if (dest->GetType() == RenderTextureDimension_Tex2D) destSlice = 0;
 	D3D12_TEXTURE_COPY_LOCATION sourceLocation;
 	sourceLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	sourceLocation.SubresourceIndex = sourceMipLevel;
+	sourceLocation.SubresourceIndex = sourceSlice * source->GetMipCount() + sourceMipLevel;
 	D3D12_TEXTURE_COPY_LOCATION destLocation;
 	destLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	destLocation.SubresourceIndex = destMipLevel;
+	destLocation.SubresourceIndex = destSlice * dest->GetMipCount() + destMipLevel;
 	sourceLocation.pResource = source->GetColorResource();
 	destLocation.pResource = dest->GetColorResource();
 	if (sourceTarget == CopyTarget_ColorBuffer)

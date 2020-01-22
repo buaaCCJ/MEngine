@@ -302,13 +302,16 @@ void GetGBufferRenderingShader(ID3D12Device* device, JobBucket* bucket)
 	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	p.depthStencilState = dsDesc;
 
-	const UINT SHADER_VAR_COUNT = 6;
+	const UINT SHADER_VAR_COUNT = 9;
 	ShaderVariable var[SHADER_VAR_COUNT] =
 	{
 		Texture2D::GetShaderVar(6, 0, 0, "_MainTex"),
+		Texture2D::GetShaderVar(6, 0, 1, "_GreyTex"),
+		Texture2D::GetShaderVar(6, 0, 2, "_IntegerTex"),
+		Texture2D::GetShaderVar(6, 0, 3, "_Cubemap"),
 		ConstantBuffer::GetShaderVar(0, 0, "Per_Camera_Buffer"),
-		StructuredBuffer::GetShaderVar(0, 1,"_AllLight"),
-		StructuredBuffer::GetShaderVar(1,1,"_LightIndexBuffer"),
+		StructuredBuffer::GetShaderVar(0, 4,"_AllLight"),
+		StructuredBuffer::GetShaderVar(1,4,"_LightIndexBuffer"),
 		ConstantBuffer::GetShaderVar(1, 0,"LightCullCBuffer"),
 		ConstantBuffer::GetShaderVar(2, 0, "TextureIndices")
 	};

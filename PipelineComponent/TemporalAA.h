@@ -119,7 +119,7 @@ public:
 		if (tempCamData->UpdateFrame(width, height, device))
 		{
 			//Refresh & skip
-			Graphics::CopyTexture(commandList, inputColorBuffer, CopyTarget_ColorBuffer, 0, renderTargetTex, CopyTarget_ColorBuffer, 0);
+			Graphics::CopyTexture(commandList, inputColorBuffer, CopyTarget_ColorBuffer, 0, 0, renderTargetTex, CopyTarget_ColorBuffer, 0, 0);
 		}
 		else
 		{
@@ -154,8 +154,8 @@ public:
 				taaShader, 0
 			);
 		}
-		Graphics::CopyTexture(commandList, renderTargetTex, CopyTarget_ColorBuffer, 0, tempCamData->lastRenderTarget.get(), CopyTarget_ColorBuffer, 0);
-		Graphics::CopyTexture(commandList, motionVector, CopyTarget_ColorBuffer, 0, tempCamData->lastMotionVectorTexture.get(), CopyTarget_ColorBuffer, 0);
-		Graphics::CopyTexture(commandList, inputDepthBuffer, CopyTarget_DepthBuffer, 0, tempCamData->lastDepthTexture.get(), CopyTarget_ColorBuffer, 0);
+		Graphics::CopyTexture(commandList, renderTargetTex, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastRenderTarget.get(), CopyTarget_ColorBuffer, 0, 0);
+		Graphics::CopyTexture(commandList, motionVector, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastMotionVectorTexture.get(), CopyTarget_ColorBuffer, 0, 0);
+		Graphics::CopyTexture(commandList, inputDepthBuffer, CopyTarget_DepthBuffer, 0, 0, tempCamData->lastDepthTexture.get(), CopyTarget_ColorBuffer, 0, 0);
 	}
 };

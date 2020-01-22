@@ -36,6 +36,13 @@ struct LightCullCBuffer
 	XMFLOAT3 _CameraForward;
 	UINT _LightCount;
 	//Align
+	XMFLOAT3 _SunColor;
+	UINT _SunEnabled;
+	XMFLOAT3 _SunDir;
+	UINT _SunShadowEnabled;
+	XMUINT4 _ShadowmapIndices;
+	XMFLOAT4 _CascadeDistance;
+	XMFLOAT4X4 _ShadowMatrix[4];
 };
 void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
@@ -115,7 +122,7 @@ struct LightingRunnable
 			UINT maxSize = max(lights.size(), (UINT)(lightData->lightsInFrustum.GetElementCount() * 1.5));
 			lightData->lightsInFrustum.Create(device, maxSize, false, sizeof(LightCommand));
 		}
-		LightCullCBuffer cb;
+		LightCullCBuffer& cb = *(LightCullCBuffer*)lightData->lightCBuffer.GetMappedDataPtr(0);
 		XMVECTOR farPos = cam->GetPosition() + clusterLightFarPlane * cam->GetLook();
 		memcpy(&cb._CameraFarPos, &farPos, sizeof(XMFLOAT3));
 		cb._CameraFarPos.w = clusterLightFarPlane;
@@ -126,7 +133,13 @@ struct LightingRunnable
 		cb._ZBufferParams = prepareComp->_ZBufferParams;
 		cb._CameraForward = cam->GetLook3f();
 		cb._LightCount = lights.size();
-		lightData->lightCBuffer.CopyData(0, &cb);
+		//Test Sun Light
+		cb._SunColor = { 1, 1, 1 };
+		cb._SunEnabled = 1;
+		cb._SunDir = { 30, 300, 0 };
+		cb._SunShadowEnabled = 0;
+		cb._ShadowmapIndices = {0,0,0,0};
+		//
 		lightData->lightsInFrustum.CopyDatas(0, lights.size(), lights.data());
 		lightCullingShader->BindRootSignature(commandList, selfPtr->cullingDescHeap.get());
 		lightCullingShader->SetResource(commandList, _LightIndexBuffer, selfPtr->lightIndexBuffer.get(), 0);

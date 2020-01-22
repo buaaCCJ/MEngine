@@ -126,8 +126,8 @@ RenderTexture::RenderTexture(
 	UINT height,
 	RenderTextureFormat rtFormat,
 	RenderTextureDimension type,
-	int depthCount,
-	int mipCount,
+	UINT depthCount,
+	UINT mipCount,
 	RenderTextureState initState
 ) : MObject(),
 usage(rtFormat.usage),
@@ -156,6 +156,7 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 
 
 		mipCount = max(1, mipCount);
+		this->mipCount = mipCount;
 		depthSlice = arraySize;
 		D3D12_RESOURCE_DESC texDesc;
 		ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
