@@ -57,5 +57,5 @@ void World::ForceCollectAllHeapIndex()
 
 void World::Update(FrameResource* resource)
 {
-
+	
 }

@@ -149,7 +149,7 @@ void SkyboxComponent::RenderEvent(EventData& data, ThreadCommand* commandList)
 			 data.camera
 		});
 }
-ObjectPtr<Texture> testTex;
+
 
 void SkyboxComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
@@ -170,33 +170,21 @@ void SkyboxComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList
 	tempRT[1].uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
 	tempRT[2].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[2].uID = ShaderID::PropertyToID("_CameraDepthTexture");
-	/*ObjectPtr<Texture> skyboxTexture = new Texture(
-		commandList,
-		device,
-		nullptr,
-		"grasscube1024",
-		L"Textures/grasscube1024.dds",
-		true,
-		TextureType::Cubemap
-	);*/
-	testTex = new Texture(
-		commandList,
+
+	ObjectPtr<Texture> testTex = new Texture(
 		device,
 		nullptr,
 		"grasscube1024",
 		L"Resource/Cubemap.vtex",
-		false,
 		TextureType::Cubemap
 	);
 	defaultSkybox = new Skybox(
 		testTex,
-		device,
-		commandList
+		device
 	);
 }
 void SkyboxComponent::Dispose()
 {
 	psoContainer = nullptr;
 	delete defaultSkybox;
-	testTex.Destroy();
 }

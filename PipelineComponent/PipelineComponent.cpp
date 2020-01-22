@@ -45,7 +45,7 @@ void PipelineComponent::CreateFence(ID3D12Device* device)
 {
 	if (fence == nullptr && GetCommandListType() != CommandListType_None)
 	{
-		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_SHARED,
+		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE,
 			IID_PPV_ARGS(&fence)));
 	}
 	dependingComponentCount++;

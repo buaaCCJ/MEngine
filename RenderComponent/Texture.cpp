@@ -12,11 +12,14 @@ using namespace DirectX;
 
 
 
-void ReadData(std::wstring& str, TextureData& headerResult, std::vector<char>& dataResult)
+void ReadData(const std::wstring& str, TextureData& headerResult, std::vector<char>& dataResult)
 {
 	std::ifstream ifs;
 	ifs.open(str, std::ios::binary);
-
+	if (!ifs)
+	{
+		throw "File Not Exists!";
+	}
 	ifs.read((char*)&headerResult, sizeof(TextureData));
 	if (headerResult.mipCount < 1) headerResult.mipCount = 1;
 	UINT formt = (UINT)headerResult.format;
@@ -96,7 +99,7 @@ public:
 	virtual void operator()(
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* commandList,
-		FrameResource* resource)
+		FrameResource* resource) override
 	{
 		ubuffer.ReleaseAfterFlush(resource);
 		UINT offset = 0;
@@ -174,89 +177,79 @@ public:
 		size_t size = ubuffer.GetElementCount();
 	}
 };
+
 Texture::Texture(
-	ID3D12GraphicsCommandList* commandList,
 	ID3D12Device* device,
 	FrameResource* res,
-	std::string name,
-	std::wstring filePath,
-	bool isDDs,
+	const std::string& name,
+	const std::wstring& filePath,
 	TextureType type
-) : MObject(), mType(type)
+) : MObject(), mType(type),
+Name(name),
+Filename(filePath)
 {
-	Name = name;
-	Filename = filePath;
-	if (isDDs)
-	{
-		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(device,
-			commandList, Filename.c_str(),
-			Resource, UploadHeap));
-		auto desc = Resource->GetDesc();
-		mFormat = desc.Format;
-		mipLevels = desc.MipLevels;
-		FrameResource::ReleaseResourceAfterFlush(UploadHeap, res);
-		UploadHeap = nullptr;
-	}
-	else
-	{
-		TextureData data;//TODO : Read From Texture
-		ZeroMemory(&data, sizeof(TextureData));
-		std::vector<char> dataResults;
-		ReadData(filePath, data, dataResults);
-		if (data.textureType != type)
-			throw "Texture Type Not Match Exception";
-		if (type == TextureType::Cubemap && data.depth != 6)
-			throw "Cubemap's tex size must be 6";
-		switch (data.format)
-		{
-		case TextureData::LoadFormat_RGBA8:
-			mFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-			break;
-		case TextureData::LoadFormat_RGBA16:
-			mFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
-			break;
-		case TextureData::LoadFormat_RGBAFloat16:
-			mFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-			break;
-		case TextureData::LoadFormat_RGBAFloat32:
-			mFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-			break;
-		}
-		mipLevels = data.mipCount;
-		D3D12_RESOURCE_DESC texDesc;
-		ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
-		texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		texDesc.Alignment = 0;
-		texDesc.Width = data.width;
-		texDesc.Height = data.height;
-		texDesc.DepthOrArraySize = data.depth;
-		texDesc.MipLevels = data.mipCount;
-		texDesc.Format = mFormat;
-		texDesc.SampleDesc.Count = 1;
-		texDesc.SampleDesc.Quality = 0;
-		texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-		ThrowIfFailed(device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-			D3D12_HEAP_FLAG_NONE,
-			&texDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,//D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-			nullptr,
-			IID_PPV_ARGS(&Resource)));
 
-		TextureLoadCommand* cmd = new TextureLoadCommand(
-			device,
-			dataResults.size(),
-			dataResults.data(),
-			Resource.Get(),
-			data.format,
-			data.width,
-			data.height,
-			data.mipCount,
-			data.depth,
-			data.textureType);
-		RenderCommand::AddCommand(cmd);
+	TextureData data;//TODO : Read From Texture
+	ZeroMemory(&data, sizeof(TextureData));
+
+	std::vector<char> dataResults;
+	ReadData(filePath, data, dataResults);
+	int sb = data.depth;
+	if (data.textureType != type)
+		throw "Texture Type Not Match Exception";
+	
+	if (type == TextureType::Cubemap && data.depth != 6)
+		throw "Cubemap's tex size must be 6";
+	switch (data.format)
+	{
+	case TextureData::LoadFormat_RGBA8:
+		mFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case TextureData::LoadFormat_RGBA16:
+		mFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
+		break;
+	case TextureData::LoadFormat_RGBAFloat16:
+		mFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		break;
+	case TextureData::LoadFormat_RGBAFloat32:
+		mFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
 	}
+	mipLevels = data.mipCount;
+	D3D12_RESOURCE_DESC texDesc;
+	ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
+	texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	texDesc.Alignment = 0;
+	texDesc.Width = data.width;
+	texDesc.Height = data.height;
+	texDesc.DepthOrArraySize = data.depth;
+	texDesc.MipLevels = data.mipCount;
+	texDesc.Format = mFormat;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.SampleDesc.Quality = 0;
+	texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	texDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	ThrowIfFailed(device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&texDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,//D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+		nullptr,
+		IID_PPV_ARGS(&Resource)));
+
+	TextureLoadCommand* cmd = new TextureLoadCommand(
+		device,
+		dataResults.size(),
+		dataResults.data(),
+		Resource.Get(),
+		data.format,
+		data.width,
+		data.height,
+		data.mipCount,
+		data.depth,
+		data.textureType);
+	RenderCommand::AddCommand(cmd);
+
 }
 void Texture::GetResourceViewDescriptor(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc)
 {

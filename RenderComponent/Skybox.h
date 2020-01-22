@@ -19,8 +19,7 @@ public:
 	virtual ~Skybox();
 	Skybox(
 		ObjectPtr<Texture>& tex,
-		ID3D12Device* device,
-		ID3D12GraphicsCommandList* commandList
+		ID3D12Device* device
 	);
 
 	void Draw(

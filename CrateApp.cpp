@@ -206,7 +206,7 @@ void CrateApp::Draw(const GameTimer& gt)
 	pipelineJobSys->Wait();
 	data.resource->UpdateBeforeFrame(data.fence);//Flush CommandQueue
 	pipelineJobSys->ExecuteBucket(bucketArray.data(), bucketArray.size());					//Execute Tasks
-	rp->ExecuteRendering(data, bucketArray);
+	rp->ExecuteRendering(data);
 	ThrowIfFailed(mSwapChain->Present(0, 0));
 	std::vector <JobBucket*>& lastBucketArray = buckets[bucketsFlag];
 	for (auto ite = lastBucketArray.begin(); ite != lastBucketArray.end(); ++ite)

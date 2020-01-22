@@ -56,10 +56,10 @@ public:
 	~RenderPipeline();
 #ifdef NDEBUG
 	void PrepareRendering(RenderPipelineData& data, JobSystem* jobSys, std::vector <JobBucket*>& bucketArray) noexcept;
-	void ExecuteRendering(RenderPipelineData& data, std::vector <JobBucket*>& bucketArray) noexcept;
+	void ExecuteRendering(RenderPipelineData& data) noexcept;
 #else
 	void PrepareRendering(RenderPipelineData& data, JobSystem* jobSys, std::vector <JobBucket*>& bucketArray);
-	void ExecuteRendering(RenderPipelineData& data, std::vector <JobBucket*>& bucketArray);
+	void ExecuteRendering(RenderPipelineData& data);
 #endif
 	template <typename T>
 	static T* GetComponent()

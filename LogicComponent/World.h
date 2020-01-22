@@ -18,7 +18,6 @@ private:
 	World(ID3D12GraphicsCommandList* cmdList, ID3D12Device* device);
 	static World* current;
 	std::mutex mtx;
-	
 public:
 	std::vector<Transform*> allTransformsPtr;
 	~World();

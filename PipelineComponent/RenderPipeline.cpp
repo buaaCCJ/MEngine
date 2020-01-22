@@ -216,9 +216,9 @@ void RenderPipeline::PrepareRendering(RenderPipelineData& renderData, JobSystem*
 }
 
 #ifdef NDEBUG
-void RenderPipeline::ExecuteRendering(RenderPipelineData& renderData, std::vector <JobBucket*>& bucketArray) noexcept
+void RenderPipeline::ExecuteRendering(RenderPipelineData& renderData) noexcept
 #else
-void RenderPipeline::ExecuteRendering(RenderPipelineData& renderData, std::vector <JobBucket*>& bucketArray)
+void RenderPipeline::ExecuteRendering(RenderPipelineData& renderData)
 #endif
 {
 	if (renderData.lastResource)				//Run Last frame's commandqueue
