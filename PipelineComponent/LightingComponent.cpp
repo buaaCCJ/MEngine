@@ -134,9 +134,9 @@ struct LightingRunnable
 		cb._CameraForward = cam->GetLook3f();
 		cb._LightCount = lights.size();
 		//Test Sun Light
-		cb._SunColor = { 1, 1, 1 };
+		cb._SunColor = { 3, 2.8, 2.65 };
 		cb._SunEnabled = 1;
-		cb._SunDir = { 30, 300, 0 };
+		cb._SunDir = { -0.75, -0.5, 0.4330126 };
 		cb._SunShadowEnabled = 0;
 		cb._ShadowmapIndices = {0,0,0,0};
 		//

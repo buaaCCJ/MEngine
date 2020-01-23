@@ -1,9 +1,10 @@
-    #include "Include/Lighting.cginc"
 	#include "Include/Sampler.cginc"
 	#include "Include/Common.hlsl"
 	#include "Include/Montcalo_Library.hlsl"
 	#include "Include/BSDF_Library.hlsl"
 	#include "Include/ShadingModel.hlsl"
+	#define GBUFFER_SHADER
+	#include "Include/Lighting.cginc"
 	struct appdata
 		{
 			float4 vertex : POSITION;
@@ -71,6 +72,26 @@ inline float LinearEyeDepth( float z )
     return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
 }
 
+struct StandardPBRMaterial
+{
+	float2 uvScale;
+	float2 uvOffset;
+	//align
+	float3 albedo;
+	float metallic;
+	float3 emission;
+	float roughness;
+	//align
+	float occlusion;
+	float cutoff;
+	int albedoTexIndex;
+	int specularTexIndex;
+	//align
+	int normalTexIndex;
+	int emissionTexIndex;
+	float2 __align;
+};
+
 StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
 StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 
@@ -97,7 +118,7 @@ StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 
 			float3 refl = reflect(-viewDir, worldNormal);
 			float4 skyboxColor = _Cubemap[_SkyboxTex].SampleLevel(trilinearClampSampler, refl, 3);
-			float3 lightColor = CalculateLocalLight(
+		/*	float3 lightColor = CalculateLocalLight(
 				i.texcoord,
 				worldPos,
 				linearEyeDepth,
@@ -107,8 +128,17 @@ StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 				_CameraFarPos.w,
 				_LightIndexBuffer,
 				_AllLight
-			);
+			);*/
 		
-			
-			return skyboxColor;//float4(worldNormal, 1);
+			//CalculateSunLight_NoShadow(float3 N, float3 V, float3 L, float3 col, float3 AlbedoColor, float3 SpecularColor, float3 Roughness)
+			float3 sunColor = CalculateSunLight_NoShadow(
+				worldNormal,
+				viewDir,
+				-_SunDir,
+				_SunColor,
+				0,
+				1,
+				0.7
+			);
+			return float4(sunColor, 1);//float4(worldNormal, 1);
         }

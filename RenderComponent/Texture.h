@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include "../Common/MObject.h"
-class FrameResource;
 class DescriptorHeap;
 enum class TextureType : int
 {
@@ -26,7 +25,9 @@ struct TextureData
 		LoadFormat_RGBA16 = 1,
 		LoadFormat_RGBAFloat16 = 2,
 		LoadFormat_RGBAFloat32 = 3,
-		LoadFormat_Num = 4
+		LoadFormat_RGFLOAT16 = 4,
+		LoadFormat_RG16 = 5,
+		LoadFormat_Num = 6
 	};
 	//TODO
 	//Should Have Compress Type here
@@ -54,7 +55,6 @@ public:
 	}
 	Texture(
 		ID3D12Device* device,
-		FrameResource* res,
 		const std::string& name,
 		const std::wstring& filePath,
 		TextureType type = TextureType::Tex2D

@@ -1,112 +1,6 @@
 #include "ShaderCompiler.h"
-#include "../RenderComponent/Shader.h"
-#include "../RenderComponent/ComputeShader.h"
 #include "../JobSystem/JobInclude.h"
-namespace SCompile {
-	struct TextureCube
-	{
-		inline static ShaderVariable GetShaderVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_DescriptorHeap, tableSize, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::SRVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct Texture2D
-	{
-		inline static ShaderVariable GetShaderVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_DescriptorHeap, tableSize, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::SRVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct Texture3D
-	{
-		inline static ShaderVariable GetShaderVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_DescriptorHeap, tableSize, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::SRVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct Texture2DArray
-	{
-		inline static ShaderVariable GetShaderVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_DescriptorHeap, tableSize, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::SRVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-	struct StructuredBuffer
-	{
-		inline static ShaderVariable GetShaderVar(UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_StructuredBuffer, 0, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::StructuredBuffer, 0, regis, space);
-		}
-	};
-
-	struct ConstantBuffer
-	{
-		inline static ShaderVariable GetShaderVar(UINT regis, UINT space, const std::string& name)
-		{
-			return ShaderVariable(name, ShaderVariableType_ConstantBuffer, 0, regis, space);
-		}
-		inline static ComputeShaderVariable GetComputeVar(UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::ConstantBuffer, 0, regis, space);
-		}
-	};
-
-
-	struct RWTexture2D
-	{
-		inline static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::UAVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct RWTexture3D
-	{
-		inline	static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::UAVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct RWTexture2DArray
-	{
-		inline	static ComputeShaderVariable GetComputeVar(UINT tableSize, UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::UAVDescriptorHeap, tableSize, regis, space);
-		}
-	};
-
-	struct RWStructuredBuffer
-	{
-		inline static ComputeShaderVariable GetComputeVar(UINT regis, UINT space, const std::string& name)
-		{
-			return ComputeShaderVariable(name, ComputeShaderVariable::RWStructuredBuffer, 0, regis, space);
-		}
-	};
-}
+#include "ShaderUniforms.h"
 using namespace SCompile;
 #define StructuredBuffer SCompile::StructuredBuffer
 int ShaderCompiler::shaderIDCount = 0;
@@ -406,6 +300,48 @@ void GetClusterBasedLightCullingShader(ID3D12Device* device, JobBucket* bucket)
 	ShaderCompiler::AddComputeShader("LightCull", cs);
 }
 
+void GetPreintShader(ID3D12Device* device, JobBucket* bucket)
+{
+	//ZWrite
+	D3D12_DEPTH_STENCIL_DESC dsDesc;
+	dsDesc.DepthEnable = FALSE;
+	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	dsDesc.StencilEnable = FALSE;
+	dsDesc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	dsDesc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
+	{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+	dsDesc.FrontFace = defaultStencilOp;
+	dsDesc.BackFace = defaultStencilOp;
+	//Cull
+	D3D12_RASTERIZER_DESC cullDesc;
+	cullDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	cullDesc.CullMode = D3D12_CULL_MODE_NONE;
+	cullDesc.FrontCounterClockwise = FALSE;
+	cullDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+	cullDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+	cullDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+	cullDesc.DepthClipEnable = FALSE;
+	cullDesc.MultisampleEnable = FALSE;
+	cullDesc.AntialiasedLineEnable = FALSE;
+	cullDesc.ForcedSampleCount = 0;
+	cullDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+	const UINT PASS_COUNT = 1;
+	Pass allPasses[PASS_COUNT];
+	Pass& p = allPasses[0];
+	p.fragment = "frag";
+	p.vertex = "vert";
+	p.filePath = L"Shaders\\PreintBaker.hlsl";
+	p.name = "preint";
+	p.rasterizeState = cullDesc;
+	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	p.depthStencilState = dsDesc;
+
+	Shader* preint = new Shader(allPasses, PASS_COUNT, nullptr, 0, device, bucket);
+	ShaderCompiler::AddShader("PreInt", preint);
+}
+
 void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 {
 #ifdef NDEBUG
@@ -422,6 +358,7 @@ void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 	GetCullingShader(device, bucket);
 	GetPostProcessShader(device, bucket);
 	GetTemporalAAShader(device, bucket);
+	GetPreintShader(device, bucket);
 	GetClusterBasedLightCullingShader(device, bucket);
 	GetGBufferRenderingShader(device, bucket);
 #ifdef SHADER_MULTICORE_COMPILE

@@ -146,6 +146,7 @@
     <ClInclude Include="Singleton\PSOContainer.h" />
     <ClInclude Include="Singleton\ShaderCompiler.h" />
     <ClInclude Include="Singleton\ShaderID.h" />
+    <ClInclude Include="Singleton\ShaderUniforms.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="TODOList.txt" />

@@ -151,13 +151,10 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 	taaComponent->prePareComp = prepareComp;
 	taaComponent->device = device;
 	taaComponent->toRTContainer = renderTextureContainer.get();
-	/*testTex = new Texture(
-		commandList,
+/*	testTex = new Texture(
 		device,
-		nullptr,
 		"Test",
-		L"Textures/Test.vtex",
-		false
+		L"Resource/Test.vtex"
 	);*/
 }
 
@@ -173,4 +170,5 @@ void PostProcessingComponent::Dispose()
 {
 	backBufferContainer = nullptr;
 	taaComponent = nullptr;
+	//testTex.Destroy();
 }

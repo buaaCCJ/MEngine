@@ -12,46 +12,46 @@
 LightingComponent* lightComp;
 Shader* gbufferShader;
 std::unique_ptr<PSOContainer> drawRenderTargetContainer;
-UINT BaseColorComponent::_AllLight(0);
-UINT BaseColorComponent::_LightIndexBuffer(0);
-UINT BaseColorComponent::LightCullCBuffer(0);
-UINT BaseColorComponent::TextureIndices(0);
+uint BaseColorComponent::_AllLight(0);
+uint BaseColorComponent::_LightIndexBuffer(0);
+uint BaseColorComponent::LightCullCBuffer(0);
+uint BaseColorComponent::TextureIndices(0);
 
 
 struct TextureIndices
 {
-	UINT _UVTex;
-	UINT _TangentTex;
-	UINT _NormalTex;
-	UINT _DepthTex;
-	UINT _ShaderIDTex;
-	UINT _MaterialIDTex;
-	UINT _SkyboxCubemap;
+	uint _UVTex;
+	uint _TangentTex;
+	uint _NormalTex;
+	uint _DepthTex;
+	uint _ShaderIDTex;
+	uint _MaterialIDTex;
+	uint _SkyboxCubemap;
 };
-#define TEX_COUNT 7
+const uint TEX_COUNT = sizeof(TextureIndices) / 4;
 struct BaseColorFrameData : public IPipelineResource
 {
 	UploadBuffer texIndicesBuffer;
-	UINT descs[TEX_COUNT];
+	uint descs[TEX_COUNT];
 	BaseColorFrameData(ID3D12Device* device)
 	{
 		texIndicesBuffer.Create(
 			device, 1, true, sizeof(TextureIndices)
 		);
 		World* world = World::GetInstance();
-		for (UINT i = 0; i < TEX_COUNT; ++i)
+		for (uint i = 0; i < TEX_COUNT; ++i)
 		{
 			descs[i] = world->GetDescHeapIndexFromPool();
 		}
 		TextureIndices ind;
-		memcpy(&ind._UVTex, descs, sizeof(UINT) * TEX_COUNT);
+		memcpy(&ind._UVTex, descs, sizeof(uint) * TEX_COUNT);
 		texIndicesBuffer.CopyData(0, &ind);
 	}
 
 	~BaseColorFrameData()
 	{
 		World* world = World::GetInstance();
-		for (UINT i = 0; i < TEX_COUNT; ++i)
+		for (uint i = 0; i < TEX_COUNT; ++i)
 		{
 			world->ReturnDescHeapIndexToPool(descs[i]);
 		}
@@ -81,9 +81,9 @@ struct BaseColorRunnable
 	FrameResource* res;
 	BaseColorComponent* selfPtr;
 	ID3D12Device* device;
-	static UINT _GreyTex;
-	static UINT _IntegerTex;
-	static UINT _Cubemap;
+	static uint _GreyTex;
+	static uint _IntegerTex;
+	static uint _Cubemap;
 	void operator()()
 	{
 		threadCommand->ResetCommand();
@@ -154,9 +154,9 @@ void BaseColorComponent::RenderEvent(EventData& data, ThreadCommand* commandList
 		});
 }
 
-UINT BaseColorRunnable::_GreyTex;
-UINT BaseColorRunnable::_IntegerTex;
-UINT BaseColorRunnable::_Cubemap;
+uint BaseColorRunnable::_GreyTex;
+uint BaseColorRunnable::_IntegerTex;
+uint BaseColorRunnable::_Cubemap;
 void BaseColorComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	BaseColorRunnable::_GreyTex = ShaderID::PropertyToID("_GreyTex");

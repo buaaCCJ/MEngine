@@ -33,6 +33,7 @@ uint GetIndex(uint3 id, uint3 size, uint multiply){
     return (uint)dot(id, multiValue);
 }
 
+#ifdef GBUFFER_SHADER
 float3 CalculateLocalLight(
 	float2 uv, 
 	float4 WorldPos, 
@@ -65,5 +66,17 @@ float3 CalculateLocalLight(
 	}
 	return ShadingColor;
 }
+
+float3 CalculateSunLight_NoShadow(float3 N, float3 V, float3 L, float3 col, float3 AlbedoColor, float3 SpecularColor, float3 Roughness)
+{
+	BSDFContext LightData = (BSDFContext)0;
+
+	float3 H = normalize(V + L);
+	InitGeoData(LightData, N, V);
+	InitLightingData(LightData, N, V, L, H);
+	return Defult_Lit(LightData, col,  AlbedoColor, SpecularColor, Roughness);
+
+}
+#endif
 
 #endif

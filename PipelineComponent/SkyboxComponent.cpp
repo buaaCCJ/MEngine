@@ -173,7 +173,6 @@ void SkyboxComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList
 
 	skyboxTex = new Texture(
 		device,
-		nullptr,
 		"grasscube1024",
 		L"Resource/Sky.vtex",
 		TextureType::Cubemap

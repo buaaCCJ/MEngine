@@ -43,6 +43,12 @@ void ReadData(const std::wstring& str, TextureData& headerResult, std::vector<ch
 	case TextureData::LoadFormat_RGBAFloat32:
 		stride = 16;
 		break;
+	case TextureData::LoadFormat_RG16:
+		stride = 4;
+		break;
+	case TextureData::LoadFormat_RGFLOAT16:
+		stride = 4;
+		break;
 	}
 	size_t size = 0;
 	UINT depth = headerResult.depth;
@@ -124,6 +130,14 @@ public:
 			texFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 			currentOffset = 8;
 			break;
+		case TextureData::LoadFormat_RG16:
+			texFormat = DXGI_FORMAT_R16G16_UNORM;
+			currentOffset = 4;
+			break;
+		case TextureData::LoadFormat_RGFLOAT16:
+			texFormat = DXGI_FORMAT_R16G16_FLOAT;
+			currentOffset = 4;
+			break;
 		}
 		if (type == TextureType::Tex3D)
 		{
@@ -180,7 +194,6 @@ public:
 
 Texture::Texture(
 	ID3D12Device* device,
-	FrameResource* res,
 	const std::string& name,
 	const std::wstring& filePath,
 	TextureType type
@@ -213,6 +226,12 @@ Filename(filePath)
 		break;
 	case TextureData::LoadFormat_RGBAFloat32:
 		mFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case TextureData::LoadFormat_RG16:
+		mFormat = DXGI_FORMAT_R16G16_UNORM;
+		break;
+	case TextureData::LoadFormat_RGFLOAT16:
+		mFormat = DXGI_FORMAT_R16G16_FLOAT;
 		break;
 	}
 	mipLevels = data.mipCount;
