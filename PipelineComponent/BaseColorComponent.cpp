@@ -17,7 +17,6 @@ uint BaseColorComponent::_LightIndexBuffer(0);
 uint BaseColorComponent::LightCullCBuffer(0);
 uint BaseColorComponent::TextureIndices(0);
 
-
 struct TextureIndices
 {
 	uint _UVTex;
@@ -27,6 +26,7 @@ struct TextureIndices
 	uint _ShaderIDTex;
 	uint _MaterialIDTex;
 	uint _SkyboxCubemap;
+	uint _PreintTexture;
 };
 const uint TEX_COUNT = sizeof(TextureIndices) / 4;
 struct BaseColorFrameData : public IPipelineResource
@@ -92,6 +92,42 @@ struct BaseColorRunnable
 		{
 			return new BaseColorFrameData(device);
 		});
+		if (!selfPtr->preintTexture)
+		{
+			RenderTextureFormat format;
+			format.colorFormat = DXGI_FORMAT_R16G16_UNORM;
+			selfPtr->preintContainer = std::unique_ptr<PSOContainer>(new PSOContainer(
+				DXGI_FORMAT_UNKNOWN,
+				1,
+				&format.colorFormat
+			));
+
+			format.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
+			selfPtr->preintTexture = new RenderTexture(
+				device,
+				256,
+				256,
+				format,
+				RenderTextureDimension_Tex2D,
+				1,
+				1);
+			Shader* preintShader = ShaderCompiler::GetShader("PreInt");
+			preintShader->BindRootSignature(commandList);
+			Graphics::Blit(
+				commandList,
+				device,
+				&selfPtr->preintTexture->GetColorDescriptor(0),
+				1,
+				nullptr,
+				selfPtr->preintContainer.get(),
+				selfPtr->preintTexture->GetWidth(),
+				selfPtr->preintTexture->GetHeight(),
+				preintShader,
+				0
+			);
+		}
+
+
 		LightFrameData* lightFrameData = (LightFrameData*)res->GetPerCameraResource(lightComp, cam, []()->LightFrameData*
 		{
 #ifndef NDEBUG
@@ -107,6 +143,7 @@ struct BaseColorRunnable
 		shaderIDtex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[4], device);
 		materialIDtex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[5], device);
 		selfPtr->skboxComp->skyboxTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[6], device);
+		selfPtr->preintTexture->BindColorBufferToSRVHeap(worldHeap, frameData->descs[7], device);
 		gbufferShader->BindRootSignature(commandList, worldHeap);
 		ConstBufferElement ele = res->cameraCBs[cam->GetInstanceID()];
 		gbufferShader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), ele.buffer, ele.element);

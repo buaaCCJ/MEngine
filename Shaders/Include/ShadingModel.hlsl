@@ -48,9 +48,8 @@ float3 ClearCoat_Lit(BSDFContext LightData, float3 Energy, float3 ClearCoat_Mult
 	return (Diffuse + max(0, BaseSpecular) +  max(0, ClearCoat_Specular)) * Energy * LayerAttenuation * LightData.NoL;
 }
 
-float3 PreintegratedDGF_LUT(Texture2D<float4> PreintegratedLUT, out float3 EnergyCompensation, float3 SpecularColor, float Roughness, float NoV)
+float3 PreintegratedDGF_LUT(float2 AB, out float3 EnergyCompensation, float3 SpecularColor)
 {
-    float2 AB = PreintegratedLUT.SampleLevel(bilinearClampSampler, float2(Roughness, NoV), 0).rg;
     float3 ReflectionGF = lerp(saturate(50 * SpecularColor.g) * AB.ggg, AB.rrr, SpecularColor);
     EnergyCompensation = 1 + SpecularColor * (1 / AB.r - 1);
     return ReflectionGF;

@@ -143,7 +143,7 @@ void Graphics::Blit(
 	psoDesc.meshLayoutIndex = fullScreenMesh->GetLayoutIndex();
 	psoDesc.shaderPass = pass;
 	psoDesc.shaderPtr = shader;
-	commandList->OMSetRenderTargets(renderTargetCount, renderTarget, true, depthTarget);
+	commandList->OMSetRenderTargets(renderTargetCount, renderTarget, false, depthTarget);
 	commandList->RSSetViewports(1, &mViewport);
 	commandList->RSSetScissorRects(1, &mScissorRect);
 	commandList->SetPipelineState(container->GetState(psoDesc, device));

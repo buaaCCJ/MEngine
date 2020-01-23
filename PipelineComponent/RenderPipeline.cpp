@@ -10,6 +10,7 @@
 #include "../RenderComponent/RenderCommand.h"
 #include "LightingComponent.h"
 #include "BaseColorComponent.h"
+#include "../Singleton/PSOContainer.h"
 //ThreadCommand* threadCommand;
 RenderPipeline* RenderPipeline::current(nullptr);
 std::unordered_map<std::string, PipelineComponent*> RenderPipeline::componentsLink;

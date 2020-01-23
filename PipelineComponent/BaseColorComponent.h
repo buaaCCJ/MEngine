@@ -1,7 +1,9 @@
 #pragma once
 #include "PipelineComponent.h"
 class SkyboxComponent;
+class RenderTexture;
 class BaseColorRunnable;
+class PSOContainer;
 class BaseColorComponent : public PipelineComponent
 {
 private:
@@ -13,6 +15,8 @@ public:
 	static UINT _LightIndexBuffer;
 	static UINT LightCullCBuffer;
 	static UINT TextureIndices;
+	RenderTexture* preintTexture;
+	std::unique_ptr<PSOContainer> preintContainer;
 	virtual CommandListType GetCommandListType() { return CommandListType_Graphics; }
 	virtual void Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	virtual void Dispose();

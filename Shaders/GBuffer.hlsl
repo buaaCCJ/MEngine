@@ -65,12 +65,16 @@ cbuffer TextureIndices : register(b2)
     uint _ShaderIDTex ;
     uint _MaterialIDTex;
 	uint _SkyboxTex;
+	uint _PreintTexture;
 };
 
 inline float LinearEyeDepth( float z )
 {
     return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
 }
+
+StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
+StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 
 struct StandardPBRMaterial
 {
@@ -92,8 +96,7 @@ struct StandardPBRMaterial
 	float2 __align;
 };
 
-StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
-StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
+StructuredBuffer<StandardPBRMaterial> _DefaultMaterials : register(t2, space4);
 
 		v2f vert(appdata v)
 		{
@@ -117,7 +120,7 @@ StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 			float linearEyeDepth = LinearEyeDepth(depth);
 
 			float3 refl = reflect(-viewDir, worldNormal);
-			float4 skyboxColor = _Cubemap[_SkyboxTex].SampleLevel(trilinearClampSampler, refl, 3);
+
 		/*	float3 lightColor = CalculateLocalLight(
 				i.texcoord,
 				worldPos,
@@ -131,14 +134,21 @@ StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 			);*/
 		
 			//CalculateSunLight_NoShadow(float3 N, float3 V, float3 L, float3 col, float3 AlbedoColor, float3 SpecularColor, float3 Roughness)
+			BSDFContext context = (BSDFContext)0;
 			float3 sunColor = CalculateSunLight_NoShadow(
 				worldNormal,
 				viewDir,
 				-_SunDir,
 				_SunColor,
-				0,
+				0.8,
+				0.2,
 				1,
-				0.7
+				context
 			);
-			return float4(sunColor, 1);//float4(worldNormal, 1);
+			float4 skyboxColor = _Cubemap[_SkyboxTex].SampleLevel(trilinearClampSampler, refl, 10);
+			float2 preintAB = _MainTex[_PreintTexture].SampleLevel(bilinearClampSampler, float2(1, context.NoV), 0).rg;
+			float3 EnergyCompensation;
+			float3 preint = PreintegratedDGF_LUT(preintAB, EnergyCompensation, skyboxColor.xyz);
+			preint *= EnergyCompensation;
+			return float4(sunColor + preint, 1);//float4(worldNormal, 1);
         }
