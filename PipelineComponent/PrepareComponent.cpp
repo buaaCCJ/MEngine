@@ -79,8 +79,8 @@ void GetJitteredProjectionMatrix(
 }
 void ConfigureJitteredProjectionMatrix(Camera* camera, UINT height, UINT width, double jitterOffset, CameraTransformData* data)
 {
-	data->nonJitteredProjMatrix = camera->GetProj();
-	XMMATRIX jitteredMat = data->nonJitteredProjMatrix;
+	data->p = camera->GetProj();
+	data->nonJitteredProjMatrix = data->p;
 	data->lastFrameJitter = data->jitter;
 	XMVECTOR jitterVec = XMLoadFloat2(&data->jitter);
 	GetJitteredProjectionMatrix(
@@ -90,12 +90,14 @@ void ConfigureJitteredProjectionMatrix(Camera* camera, UINT height, UINT width, 
 		camera->GetAspect(),
 		jitterOffset,
 		width, height,
-		jitteredMat,
+		data->p,
 		jitterVec
 	);
 	memcpy(&data->jitter, &jitterVec, sizeof(XMFLOAT2));
-	camera->SetProj(jitteredMat);
+	camera->SetProj(data->p);
+	data->lastNonJitterVP = data->nonJitteredVPMatrix;
 	data->nonJitteredVPMatrix = XMMatrixMultiply(camera->GetView(), data->nonJitteredProjMatrix);
+	data->vp = XMMatrixMultiply(camera->GetView(), data->p);
 }
 
 struct PrepareRunnable
@@ -126,8 +128,8 @@ struct PrepareRunnable
 		XMMATRIX nonJitterVP = transData->nonJitteredVPMatrix;
 		ths->passConstants.nonJitterVP = *(XMFLOAT4X4*)&nonJitterVP;
 		ths->passConstants.nonJitterInverseVP = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(nonJitterVP), nonJitterVP);
-		memcpy(&ths->passConstants.lastVP, &transData->lastVP, sizeof(XMFLOAT4X4));
-		ths->passConstants.lastInverseVP = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(transData->lastVP), transData->lastVP);
+		memcpy(&ths->passConstants.lastVP, &transData->lastNonJitterVP, sizeof(XMFLOAT4X4));
+		ths->passConstants.lastInverseVP = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(transData->lastNonJitterVP), transData->lastNonJitterVP);
 		ConstBufferElement ele = resource->cameraCBs[camera->GetInstanceID()];
 		ele.buffer->CopyData(ele.element, &ths->passConstants);
 		//Calculate Frustum Planes

@@ -1,5 +1,6 @@
 cbuffer Per_Object_Buffer : register(b0)
 {
+    float4x4 _LastLocalToWorld;
     float4x4 _LocalToWorld;
     uint2 _ID;   //shaderid, materialid
 };
@@ -37,6 +38,8 @@ struct VertexOut
     float3 NormalW : NORMAL;
     float4 tangent : TANGENT;
 	float4 uv      : TEXCOORD;
+    float4 lastProjPos : TEXCOORD1;
+    float4 currentProjPos : TEXCOORD2;
 };
 
 VertexOut VS(VertexIn vin)
@@ -52,6 +55,8 @@ VertexOut VS(VertexIn vin)
 
     // Transform to homogeneous clip space.
     vout.PosH = mul(_VP, posW);
+    vout.currentProjPos = mul(_NonJitterVP, posW);
+    vout.lastProjPos = mul(_LastVP, mul(_LastLocalToWorld, float4(vin.PosL, 1.0f)));
     //vout.PosH /= vout.PosH.w;
     //vout.PosH.z = 1 - vout.PosH.z;
     vout.uv.xy = float4(vin.uv.xy, vin.uv2.xy);
@@ -69,10 +74,12 @@ void PS(VertexOut i,
         out uint shaderIDTex : SV_TARGET4,
         out uint materialIDTex : SV_TARGET5)
 {
+   float2 lastScreenUV = (i.lastProjPos.xy / i.lastProjPos.w) * float2(0.5, 0.5) + 0.5;
+   float2 screenUV = (i.currentProjPos.xy / i.currentProjPos.w) * float2(0.5, 0.5) + 0.5;
+   motionVectorTex = screenUV - lastScreenUV;
    uvTex = frac(i.uv);
    tangentTex = i.tangent * 0.5 + 0.5;
    normalTex = float4(i.NormalW * 0.5 + 0.5, 1);
-   motionVectorTex = 0;
    shaderIDTex = _ID.x;
    materialIDTex = _ID.y;
    

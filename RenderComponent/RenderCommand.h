@@ -7,7 +7,7 @@ class RenderCommand
 {
 private:
 	static std::mutex mtx;
-	static RingQueue<std::shared_ptr<RenderCommand>> queue;
+	static RingQueue<RenderCommand*> queue;
 public:
 	virtual ~RenderCommand() {}
 	virtual void operator()(

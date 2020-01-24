@@ -66,6 +66,19 @@ inline void d3dSetDebugName(ID3D12DeviceChild* obj, const char* name)
     }
 }
 
+template <typename T>
+struct PointerKeeper final
+{
+	T* ptr;
+	PointerKeeper(T* ptr) :
+		ptr(ptr)
+	{}
+	~PointerKeeper()
+	{
+		if (ptr) delete ptr;
+	}
+};
+
 inline std::wstring AnsiToWString(const std::string& str)
 {
     WCHAR buffer[512];

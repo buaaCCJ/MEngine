@@ -131,13 +131,13 @@ public:
 			tempCamData->lastMotionVectorTexture->BindColorBufferToSRVHeap(&tempFrameData->srvHeap, 4, device);
 			tempCamData->lastRenderTarget->BindColorBufferToSRVHeap(&tempFrameData->srvHeap, 5, device);
 			constBufferData._InvNonJitterVP = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(camTransData->nonJitteredVPMatrix), camTransData->nonJitteredVPMatrix);
-			constBufferData._InvLastVp = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(camTransData->lastVP), camTransData->lastVP);
+			constBufferData._InvLastVp = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(camTransData->lastNonJitterVP), camTransData->lastNonJitterVP);
 			constBufferData._FinalBlendParameters = { 0.95f,0.85f, 6000.0f, 0 };		//Stationary Move, Const, 0
 			constBufferData._CameraDepthTexture_TexelSize = { 1.0f / width, 1.0f / height, (float)width, (float) height };
 			constBufferData._ScreenParams = { (float)width, (float)height, 1.0f / width + 1, 1.0f / height + 1 };
 			constBufferData._ZBufferParams = prePareComp->_ZBufferParams;
 			constBufferData._TemporalClipBounding = { 3.0f, 1.25f, 3000.0f };
-			constBufferData._Sharpness = 0.1f;
+			constBufferData._Sharpness = 0.02f;
 			constBufferData._Jitter = camTransData->jitter;
 			constBufferData._LastJitter = camTransData->lastFrameJitter;
 			tempFrameData->taaBuffer.CopyData(0, &constBufferData);

@@ -15,31 +15,32 @@ class Camera;
 class PipelineComponent;
 struct Vertex
 {
-    DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT3 Normal;
-	DirectX::XMFLOAT2 TexC;
+    float3 Pos;
+    float3 Normal;
+	float2 TexC;
 };
 
 
 struct ObjectConstants
 {
-	DirectX::XMFLOAT4X4 objectToWorld = MathHelper::Identity4x4();
-	DirectX::XMUINT2 id = { 0,0 };
+	float4x4 lastObjectToWorld = MathHelper::Identity4x4();
+	float4x4 objectToWorld = MathHelper::Identity4x4();
+	uint2 id = { 0,0 };
 };
 
 struct PassConstants
 {
-	DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 InvView = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 Proj = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 InvProj = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 InvViewProj = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 nonJitterVP = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 nonJitterInverseVP = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 lastVP = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 lastInverseVP = MathHelper::Identity4x4();
-	DirectX::XMFLOAT3 worldSpaceCameraPos;
+	float4x4 View = MathHelper::Identity4x4();
+	float4x4 InvView = MathHelper::Identity4x4();
+	float4x4 Proj = MathHelper::Identity4x4();
+	float4x4 InvProj = MathHelper::Identity4x4();
+	float4x4 ViewProj = MathHelper::Identity4x4();
+	float4x4 InvViewProj = MathHelper::Identity4x4();
+	float4x4 nonJitterVP = MathHelper::Identity4x4();
+	float4x4 nonJitterInverseVP = MathHelper::Identity4x4();
+	float4x4 lastVP = MathHelper::Identity4x4();
+	float4x4 lastInverseVP = MathHelper::Identity4x4();
+	float3 worldSpaceCameraPos;
 	float NearZ = 0.0f;
 	float FarZ = 0.0f;
 };

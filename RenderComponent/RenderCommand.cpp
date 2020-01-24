@@ -1,7 +1,7 @@
 #include "RenderCommand.h"
 #include "../Singleton/FrameResource.h"
 std::mutex RenderCommand::mtx;
-RingQueue<std::shared_ptr<RenderCommand>> RenderCommand::queue(100);
+RingQueue<RenderCommand*> RenderCommand::queue(100);
 
 void RenderCommand::AddCommand(RenderCommand* command)
 {
@@ -14,14 +14,14 @@ bool RenderCommand::ExecuteCommand(
 	ID3D12GraphicsCommandList* commandList,
 	FrameResource* resource)
 {
-	std::shared_ptr<RenderCommand> cmd = nullptr;
+	RenderCommand* ptr = nullptr;
 	bool v = false;
 	{
 		std::lock_guard<std::mutex> lck(mtx);
-		v = queue.TryPop(&cmd);
+		v = queue.TryPop(&ptr);
 	}
 	if (!v) return false;
-	RenderCommand* ptr = cmd.operator->();
-	(*cmd)(device, commandList, resource);
+	PointerKeeper<RenderCommand> keeper(ptr);
+	(*ptr)(device, commandList, resource);
 	return true;
 }

@@ -29,8 +29,6 @@ struct TextureData
 		LoadFormat_RG16 = 5,
 		LoadFormat_Num = 6
 	};
-	//TODO
-	//Should Have Compress Type here
 	LoadFormat format;
 };
 

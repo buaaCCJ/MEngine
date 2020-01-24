@@ -106,20 +106,23 @@ public:
 			ConstBufferElement cEle;// = allocatedObjects[c.index];
 			std::vector<ConstBufferElement>::iterator ite;// = allocatedObjects.end() - 1;
 			UINT last = count - 1;
-			ObjectConstants objConst;
 			switch (c.type)
 			{
 			case Command::CommandType_Add:
+			{
 				Resize(count + 1, device);
 				ConstBufferElement obj = objectPool.Get(device);
 				c.cmd.objectCBufferAddress = obj.buffer->GetAddress(obj.element);
 				allocatedObjects.push_back(obj);
-				objConst.objectToWorld = c.objData.localToWorld;
-				objConst.id = c.objData.id;
-				allocatedObjects[allocatedObjects.size() - 1].buffer->CopyData(allocatedObjects[allocatedObjects.size() - 1].element, &objConst);
+				ConstBufferElement objEle = allocatedObjects[allocatedObjects.size() - 1];
+				ObjectConstants* mappedPtr = (ObjectConstants*)objEle.buffer->GetMappedDataPtr(objEle.element);
+				mappedPtr->id = c.objData.id;
+				mappedPtr->lastObjectToWorld = c.objData.localToWorld;
+				mappedPtr->objectToWorld = c.objData.localToWorld;
 				objectPosBuffer->CopyData(count, &c.objData);
 				cmdDrawBuffers->CopyData(count, &c.cmd);
 				count++;
+			}
 				break;
 			case Command::CommandType_Remove:
 				if (c.index != last)
@@ -135,10 +138,14 @@ public:
 				count--;
 				break;
 			case Command::CommandType::CommandType_TransformPos:
-				objConst.objectToWorld = c.objData.localToWorld;
-				objConst.id = c.objData.id;
-				allocatedObjects[c.index].buffer->CopyData(allocatedObjects[c.index].element, &objConst);
+			{
+				ConstBufferElement objEle = allocatedObjects[c.index];
+				ObjectConstants* mappedPtr = (ObjectConstants*)objEle.buffer->GetMappedDataPtr(objEle.element);
+				mappedPtr->lastObjectToWorld = mappedPtr->objectToWorld;
+				mappedPtr->objectToWorld = c.objData.localToWorld;
+				mappedPtr->id = c.objData.id;
 				objectPosBuffer->CopyData(c.index, &c.objData);
+			}
 				break;
 			case Command::CommandType::CommandType_Renderer:
 				cEle = allocatedObjects[c.index];

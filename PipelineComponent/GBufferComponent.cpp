@@ -71,6 +71,7 @@ public:
 		grpRenderer->UpdateFrame(resource, device);
 		//Clear
 		DEPTH_RT->ClearRenderTarget(commandList, 0);
+		MOTION_VECTOR_RT->ClearRenderTarget(commandList, 0);
 		//Prepare RenderTarget
 		D3D12_CPU_DESCRIPTOR_HANDLE handles[GBUFFER_COUNT];
 		auto st = [&](UINT p)->void
