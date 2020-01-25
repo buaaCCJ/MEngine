@@ -393,8 +393,7 @@ void  GRP_Renderer::DrawCommand(
 	ID3D12Device* device,
 	UINT targetShaderPass,
 	ConstBufferElement& cameraProperty,
-	PSOContainer* container,
-	DescriptorHeap* heap
+	PSOContainer* container
 )
 {
 	PSODescriptor desc;
@@ -403,8 +402,6 @@ void  GRP_Renderer::DrawCommand(
 	desc.shaderPtr = shader;
 	ID3D12PipelineState* pso = container->GetState(desc, device);
 	commandList->SetPipelineState(pso);
-	shader->BindRootSignature(commandList, heap);
-	shader->SetResource(commandList, ShaderID::GetMainTex(), heap, 0);
 	shader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), cameraProperty.buffer, cameraProperty.element);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->ExecuteIndirect(

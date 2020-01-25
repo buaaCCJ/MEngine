@@ -7,6 +7,9 @@
 class FrameResource;
 class Transform;
 class DescriptorHeap;
+class Mesh;
+class GRP_Renderer;
+
 //Only For Test!
 class World final
 {
@@ -19,6 +22,10 @@ private:
 	static World* current;
 	std::mutex mtx;
 public:
+	ObjectPtr<Mesh> mesh;
+	ObjectPtr<Transform> trans;
+	ObjectPtr<GRP_Renderer> grpRenderer;
+
 	std::vector<Transform*> allTransformsPtr;
 	~World();
 	UINT windowWidth;
@@ -36,7 +43,7 @@ public:
 		if (current) delete current;
 		current = nullptr;
 	}
-	void Update(FrameResource* resource);
+	void Update(FrameResource* resource, ID3D12Device* device);
 	constexpr DescriptorHeap* GetGlobalDescHeap() const
 	{ return globalDescriptorHeap.operator->(); }
 	UINT GetDescHeapIndexFromPool();

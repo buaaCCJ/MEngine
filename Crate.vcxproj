@@ -40,9 +40,9 @@
     <ClCompile Include="LogicComponent\SceneTree.cpp" />
     <ClCompile Include="LogicComponent\Transform.cpp" />
     <ClCompile Include="LogicComponent\World.cpp" />
-    <ClCompile Include="PipelineComponent\BaseColorComponent.cpp" />
     <ClCompile Include="PipelineComponent\CommandBuffer.cpp" />
     <ClCompile Include="PipelineComponent\CullTask.cpp" />
+    <ClCompile Include="PipelineComponent\DepthComponent.cpp" />
     <ClCompile Include="PipelineComponent\GBufferComponent.cpp" />
     <ClCompile Include="PipelineComponent\LightingComponent.cpp" />
     <ClCompile Include="PipelineComponent\PipelineComponent.cpp" />
@@ -106,10 +106,10 @@
     <ClInclude Include="LogicComponent\SceneTree.h" />
     <ClInclude Include="LogicComponent\Transform.h" />
     <ClInclude Include="LogicComponent\World.h" />
-    <ClInclude Include="PipelineComponent\BaseColorComponent.h" />
     <ClInclude Include="PipelineComponent\CameraData\CameraTransformData.h" />
     <ClInclude Include="PipelineComponent\CommandBuffer.h" />
     <ClInclude Include="PipelineComponent\CullTask.h" />
+    <ClInclude Include="PipelineComponent\DepthComponent.h" />
     <ClInclude Include="PipelineComponent\GBufferComponent.h" />
     <ClInclude Include="PipelineComponent\IPerCameraResource.h" />
     <ClInclude Include="PipelineComponent\LightingComponent.h" />

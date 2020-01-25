@@ -14,43 +14,66 @@
 #include "../RenderComponent/GPU Driven/GRP_Renderer.h"
 #include "../Singleton/MeshLayout.h"
 #include "PrepareComponent.h"
+#include "LightingComponent.h"
 #include "../RenderComponent/Light.h"
-
+#include "SkyboxComponent.h"
+#include "../RenderComponent/Texture.h"
 using namespace DirectX;
 PSOContainer* gbufferContainer(nullptr);
-PSOContainer* depthPrepassContainer(nullptr);
+
+LightingComponent* lightComp;
+uint GBufferComponent::_AllLight(0);
+uint GBufferComponent::_LightIndexBuffer(0);
+uint GBufferComponent::LightCullCBuffer(0);
+uint GBufferComponent::TextureIndices(0);
+
+struct TextureIndices
+{
+	uint _SkyboxCubemap;
+	uint _PreintTexture;
+};
+const uint TEX_COUNT = sizeof(TextureIndices) / 4;
+
 RenderTexture* gbufferTempRT[10];
-#define TANGENT_RT (gbufferTempRT[0])
-#define UV_RT  (gbufferTempRT[1])
+
+#define ALBEDO_RT (gbufferTempRT[0])
+#define SPECULAR_RT  (gbufferTempRT[1])
 #define NORMAL_RT  (gbufferTempRT[2])
 #define MOTION_VECTOR_RT (gbufferTempRT[3])
-#define SHADER_ID_RT (gbufferTempRT[4])
-#define MATERIAL_ID_RT (gbufferTempRT[5])
-#define DEPTH_RT (gbufferTempRT[6])
-#define GBUFFER_COUNT 6
-ObjectPtr<Mesh> mesh;
-ObjectPtr<MeshRenderer> meshRenderer;
-ObjectPtr<Transform> trans;
-ObjectPtr<GRP_Renderer> grpRenderer;
-ObjectPtr<Light> light;
-PrepareComponent* prepareComp = nullptr;
-class GBufferFrameResource : public IPipelineResource
+#define EMISSION_RT (gbufferTempRT[4])
+#define DEPTH_RT (gbufferTempRT[5])
+#define GBUFFER_COUNT 5
+
+
+struct GBufferFrameData : public IPipelineResource
 {
-public:
-	UploadBuffer ub;
-	UploadBuffer cullBuffer;
-	GBufferFrameResource(ID3D12Device* device)
+	UploadBuffer texIndicesBuffer;
+	uint descs[TEX_COUNT];
+	GBufferFrameData(ID3D12Device* device)
 	{
-		cullBuffer.Create(device, 1, true, sizeof(GRP_Renderer::CullData));
-		ub.Create(device, 2, true, sizeof(ObjectConstants));
-		XMFLOAT4X4 mat = MathHelper::Identity4x4();
-		XMMATRIX* vec = (XMMATRIX*)&mat;
-		vec->r[3] = { 0, 0, 0, 1 };
-		ub.CopyData(0, &mat);
-		vec->r[3] = { 0, 0, 0, 1 };
-		ub.CopyData(1, &mat);
+		texIndicesBuffer.Create(
+			device, 1, true, sizeof(TextureIndices)
+		);
+		World* world = World::GetInstance();
+		for (uint i = 0; i < TEX_COUNT; ++i)
+		{
+			descs[i] = world->GetDescHeapIndexFromPool();
+		}
+		TextureIndices ind;
+		memcpy(&ind, descs, sizeof(uint) * TEX_COUNT);
+		texIndicesBuffer.CopyData(0, &ind);
+	}
+
+	~GBufferFrameData()
+	{
+		World* world = World::GetInstance();
+		for (uint i = 0; i < TEX_COUNT; ++i)
+		{
+			world->ReturnDescHeapIndexToPool(descs[i]);
+		}
 	}
 };
+
 class GBufferRunnable
 {
 public:
@@ -58,19 +81,78 @@ public:
 	ThreadCommand* tcmd;		//Command List
 	Camera* cam;				//Camera
 	FrameResource* resource;	//Per Frame Data
-	void* component;//Singleton Component
+	GBufferComponent* selfPtr;//Singleton Component
 	World* world;				//Main Scene
+	static uint _GreyTex;
+	static uint _IntegerTex;
+	static uint _Cubemap;
 	void operator()()
 	{
 		tcmd->ResetCommand();
 		ID3D12GraphicsCommandList* commandList = tcmd->GetCmdList();
-		GBufferFrameResource* frameRes = (GBufferFrameResource*)resource->GetPerCameraResource(component, cam, [=]()->GBufferFrameResource*
-		{
-			return new GBufferFrameResource(device);
-		});
-		grpRenderer->UpdateFrame(resource, device);
 		//Clear
-		DEPTH_RT->ClearRenderTarget(commandList, 0);
+		
+		GBufferFrameData* frameData = (GBufferFrameData*)resource->GetPerCameraResource(selfPtr, cam, [&]()->GBufferFrameData*
+		{
+			return new GBufferFrameData(device);
+		});
+		if (!selfPtr->preintTexture)
+		{
+			RenderTextureFormat format;
+			format.colorFormat = DXGI_FORMAT_R16G16_UNORM;
+			selfPtr->preintContainer = std::unique_ptr<PSOContainer>(new PSOContainer(
+				DXGI_FORMAT_UNKNOWN,
+				1,
+				&format.colorFormat
+			));
+
+			format.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
+			selfPtr->preintTexture = new RenderTexture(
+				device,
+				256,
+				256,
+				format,
+				RenderTextureDimension_Tex2D,
+				1,
+				1);
+			Shader* preintShader = ShaderCompiler::GetShader("PreInt");
+			preintShader->BindRootSignature(commandList);
+			Graphics::Blit(
+				commandList,
+				device,
+				&selfPtr->preintTexture->GetColorDescriptor(0),
+				1,
+				nullptr,
+				selfPtr->preintContainer.get(),
+				selfPtr->preintTexture->GetWidth(),
+				selfPtr->preintTexture->GetHeight(),
+				preintShader,
+				0
+			);
+		}
+
+
+		LightFrameData* lightFrameData = (LightFrameData*)resource->GetPerCameraResource(lightComp, cam, []()->LightFrameData*
+		{
+#ifndef NDEBUG
+			throw "No Light Data Exception!";
+#endif
+			return nullptr;	//Get Error if there is no light coponent in pipeline
+		});
+		DescriptorHeap* worldHeap = World::GetInstance()->GetGlobalDescHeap();
+		selfPtr->skboxComp->skyboxTex->BindColorBufferToSRVHeap(worldHeap, frameData->descs[0], device);
+		selfPtr->preintTexture->BindColorBufferToSRVHeap(worldHeap, frameData->descs[1], device);
+		Shader* gbufferShader = world->grpRenderer->GetShader();
+		gbufferShader->BindRootSignature(commandList, worldHeap);
+		gbufferShader->SetResource(commandList, ShaderID::GetMainTex(), worldHeap, 0);
+		gbufferShader->SetResource(commandList, _GreyTex, worldHeap, 0);
+		gbufferShader->SetResource(commandList, _IntegerTex, worldHeap, 0);
+		gbufferShader->SetResource(commandList, _Cubemap, worldHeap, 0);
+		gbufferShader->SetStructuredBufferByAddress(commandList, GBufferComponent::_AllLight, lightFrameData->lightsInFrustum.GetAddress(0));
+		gbufferShader->SetStructuredBufferByAddress(commandList, GBufferComponent::_LightIndexBuffer, lightComp->lightIndexBuffer->GetAddress(0, 0));
+		gbufferShader->SetResource(commandList, GBufferComponent::LightCullCBuffer, &lightFrameData->lightCBuffer, 0);
+		gbufferShader->SetResource(commandList, GBufferComponent::TextureIndices, &frameData->texIndicesBuffer, 0);
+
 		MOTION_VECTOR_RT->ClearRenderTarget(commandList, 0);
 		//Prepare RenderTarget
 		D3D12_CPU_DESCRIPTOR_HANDLE handles[GBUFFER_COUNT];
@@ -80,48 +162,25 @@ public:
 		};
 
 		InnerLoop<decltype(st), GBUFFER_COUNT>(st);
-		UV_RT->SetViewport(commandList);
-		ConstBufferElement cullEle;
-		cullEle.buffer = &frameRes->cullBuffer;
-		cullEle.element = 0;
-		//Culling
-		grpRenderer->Culling(
-			commandList,
-			device,
-			resource,
-			cullEle,
-			prepareComp->frustumPlanes,
-			*(XMFLOAT3*)&prepareComp->frustumMinPos,
-			*(XMFLOAT3*)&prepareComp->frustumMaxPos
-		);
-
+		EMISSION_RT->SetViewport(commandList);
 		
-		//Draw Depth prepass
-		commandList->OMSetRenderTargets(0, nullptr, true, &DEPTH_RT->GetColorDescriptor(0));
-		grpRenderer->DrawCommand(
-			commandList,
-			device,
-			1,
-			resource->cameraCBs[cam->GetInstanceID()],
-			depthPrepassContainer,
-			world->GetGlobalDescHeap()
-		);
 		//Draw GBuffer
 		commandList->OMSetRenderTargets(GBUFFER_COUNT, handles, false, &DEPTH_RT->GetColorDescriptor(0));
-		grpRenderer->DrawCommand(
+		world->grpRenderer->DrawCommand(
 			commandList,
 			device,
 			0,
 			resource->cameraCBs[cam->GetInstanceID()],
-			gbufferContainer,
-			world->GetGlobalDescHeap()
+			gbufferContainer
 		);
 
 
 		tcmd->CloseCommand();
 	}
 };
-
+uint GBufferRunnable::_GreyTex;
+uint GBufferRunnable::_IntegerTex;
+uint GBufferRunnable::_Cubemap;
 std::vector<TemporalResourceCommand>& GBufferComponent::SendRenderTextureRequire(EventData& evt) {
 	for (int i = 0; i < tempRTRequire.size(); ++i)
 	{
@@ -146,69 +205,51 @@ void GBufferComponent::RenderEvent(EventData& data, ThreadCommand* commandList)
 	ScheduleJob(runnable);
 }
 
-void BuildShapeGeometry(GeometryGenerator::MeshData& box, ObjectPtr<Mesh>& bMesh, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, FrameResource* res);
-
 void GBufferComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
-	SetCPUDepending<PrepareComponent>();
-	tempRTRequire.resize(7);
-
+	SetCPUDepending<LightingComponent>();
+	SetGPUDepending<LightingComponent>();
+	lightComp = RenderPipeline::GetComponent<LightingComponent>();
+	tempRTRequire.resize(6);
+	GBufferRunnable::_GreyTex = ShaderID::PropertyToID("_GreyTex");
+	GBufferRunnable::_IntegerTex = ShaderID::PropertyToID("_IntegerTex");
+	GBufferRunnable::_Cubemap = ShaderID::PropertyToID("_Cubemap");
 	TemporalResourceCommand& specularBuffer = tempRTRequire[0];
 	specularBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
-	specularBuffer.uID = ShaderID::PropertyToID("_CameraTangentTexture");
-	specularBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+	specularBuffer.uID = ShaderID::PropertyToID("_CameraGBufferTexture0");
+	specularBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	specularBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	specularBuffer.descriptor.rtDesc.depthSlice = 1;
 	specularBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 
-
 	TemporalResourceCommand& albedoBuffer = tempRTRequire[1];
 	albedoBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
-	albedoBuffer.uID = ShaderID::PropertyToID("_CameraUVTexture");
-	albedoBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16B16A16_UNORM;
+	albedoBuffer.uID = ShaderID::PropertyToID("_CameraGBufferTexture1");
+	albedoBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	albedoBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	albedoBuffer.descriptor.rtDesc.depthSlice = 1;
 	albedoBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 
 	TemporalResourceCommand& normalBuffer = tempRTRequire[2];
 	normalBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
-	normalBuffer.uID = ShaderID::PropertyToID("_CameraNormalTexture");
+	normalBuffer.uID = ShaderID::PropertyToID("_CameraGBufferTexture2");
 	normalBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 	normalBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	normalBuffer.descriptor.rtDesc.depthSlice = 1;
 	normalBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 
 	TemporalResourceCommand& motionVectorBuffer = tempRTRequire[3];
-	motionVectorBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
+	motionVectorBuffer.type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	motionVectorBuffer.uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
 	motionVectorBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16_SNORM;
-	motionVectorBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
-	motionVectorBuffer.descriptor.rtDesc.depthSlice = 1;
-	motionVectorBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 
-	TemporalResourceCommand& shaderIDBuffer = tempRTRequire[4];
-	shaderIDBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
-	shaderIDBuffer.uID = ShaderID::PropertyToID("_CameraShaderIDTexture");
-	shaderIDBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R8_UINT;
-	shaderIDBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
-	shaderIDBuffer.descriptor.rtDesc.depthSlice = 1;
-	shaderIDBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
+	tempRTRequire[4].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
+	tempRTRequire[4].uID = ShaderID::PropertyToID("_CameraRenderTarget");
+	tempRTRequire[4].descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-	TemporalResourceCommand& materialIDBuffer = tempRTRequire[5];
-	materialIDBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
-	materialIDBuffer.uID = ShaderID::PropertyToID("_CameraMaterialIDTexture");
-	materialIDBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16_UINT;
-	materialIDBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
-	materialIDBuffer.descriptor.rtDesc.depthSlice = 1;
-	materialIDBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
-
-	TemporalResourceCommand& depthBuffer = tempRTRequire[6];
-	depthBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
+	TemporalResourceCommand& depthBuffer = tempRTRequire[5];
+	depthBuffer.type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	depthBuffer.uID = ShaderID::PropertyToID("_CameraDepthTexture");
-	depthBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_DepthBuffer;
-	depthBuffer.descriptor.rtDesc.rtFormat.depthFormat = RenderTextureDepthSettings_Depth32;
-	depthBuffer.descriptor.rtDesc.depthSlice = 1;
-	depthBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 
 	std::vector<DXGI_FORMAT> colorFormats(GBUFFER_COUNT);
 	for (int i = 0; i < GBUFFER_COUNT; ++i)
@@ -216,65 +257,18 @@ void GBufferComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLis
 		colorFormats[i] = tempRTRequire[i].descriptor.rtDesc.rtFormat.colorFormat;
 	}
 	gbufferContainer = new PSOContainer(DXGI_FORMAT_D32_FLOAT, GBUFFER_COUNT, colorFormats.data());
-	depthPrepassContainer = new PSOContainer(DXGI_FORMAT_D32_FLOAT, 0, nullptr);
-	GeometryGenerator geoGen;
-	mesh = Mesh::LoadMeshFromFile(L"Resource/Wheel.vmesh", device);
-	if (!mesh)
-	{
-		BuildShapeGeometry(geoGen.CreateBox(1, 1, 1, 1), mesh, device, commandList, nullptr);
-	}
-	trans = new Transform(nullptr);
-	meshRenderer = new MeshRenderer(trans.operator->(), device, mesh, ShaderCompiler::GetShader("OpaqueStandard"));
-	grpRenderer = new GRP_Renderer(
-		mesh->GetLayoutIndex(),
-		256,
-		ShaderCompiler::GetShader("OpaqueStandard"),
-		device
-	);
-	grpRenderer->AddRenderElement(
-		trans, mesh, device, 0, 0
-	);
-	light = new Light(trans);
-	light->SetEnabled(true);
-	prepareComp = RenderPipeline::GetComponent<PrepareComponent>();
+	_AllLight = ShaderID::PropertyToID("_AllLight");
+	_LightIndexBuffer = ShaderID::PropertyToID("_LightIndexBuffer");
+	LightCullCBuffer = ShaderID::PropertyToID("LightCullCBuffer");
+	TextureIndices = ShaderID::PropertyToID("TextureIndices");
+	skboxComp = RenderPipeline::GetComponent<SkyboxComponent>();
 }
 
 void GBufferComponent::Dispose()
 {
 
 	//meshRenderer->Destroy();
-	trans.Destroy();
+	//trans.Destroy();
 	delete gbufferContainer;
-	delete depthPrepassContainer;
-}
-
-void BuildShapeGeometry(GeometryGenerator::MeshData& box, ObjectPtr<Mesh>& bMesh, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, FrameResource* res)
-{
-	std::vector<XMFLOAT3> positions(box.Vertices.size());
-	std::vector<XMFLOAT3> normals(box.Vertices.size());
-	std::vector<XMFLOAT2> uvs(box.Vertices.size());
-	for (size_t i = 0; i < box.Vertices.size(); ++i)
-	{
-		positions[i] = box.Vertices[i].Position;
-		normals[i] = box.Vertices[i].Normal;
-		uvs[i] = box.Vertices[i].TexC;
-	}
-
-	std::vector<std::uint16_t> indices = box.GetIndices16();
-	bMesh = new Mesh(
-		box.Vertices.size(),
-		positions.data(),
-		normals.data(),
-		nullptr,
-		nullptr,
-		uvs.data(),
-		nullptr,
-		nullptr,
-		nullptr,
-		device,
-		DXGI_FORMAT_R16_UINT,
-		indices.size(),
-		indices.data()
-	);
 
 }

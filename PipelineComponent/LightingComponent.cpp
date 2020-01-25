@@ -139,16 +139,19 @@ struct LightingRunnable
 		cb._SunDir = { -0.75, -0.5, 0.4330126 };
 		cb._SunShadowEnabled = 0;
 		cb._ShadowmapIndices = {0,0,0,0};
-		//
-		lightData->lightsInFrustum.CopyDatas(0, lights.size(), lights.data());
-		lightCullingShader->BindRootSignature(commandList, selfPtr->cullingDescHeap.get());
-		lightCullingShader->SetResource(commandList, _LightIndexBuffer, selfPtr->lightIndexBuffer.get(), 0);
-		lightCullingShader->SetResource(commandList, _AllLight, &lightData->lightsInFrustum, 0);
-		lightCullingShader->SetResource(commandList, LightCullCBufferID, &lightData->lightCBuffer, 0);
-		lightCullingShader->SetResource(commandList, ShaderID::GetMainTex(), selfPtr->cullingDescHeap.get(), 0);
-		lightCullingShader->Dispatch(commandList, 0, 1, 1, 1);//Set XY Plane
-		lightCullingShader->Dispatch(commandList, 1, 1, 1, 1);//Set Z Plane
-		lightCullingShader->Dispatch(commandList, 2, 1, 1, ZRES);
+		
+		if (!lights.empty())
+		{
+			lightData->lightsInFrustum.CopyDatas(0, lights.size(), lights.data());
+			lightCullingShader->BindRootSignature(commandList, selfPtr->cullingDescHeap.get());
+			lightCullingShader->SetResource(commandList, _LightIndexBuffer, selfPtr->lightIndexBuffer.get(), 0);
+			lightCullingShader->SetResource(commandList, _AllLight, &lightData->lightsInFrustum, 0);
+			lightCullingShader->SetResource(commandList, LightCullCBufferID, &lightData->lightCBuffer, 0);
+			lightCullingShader->SetResource(commandList, ShaderID::GetMainTex(), selfPtr->cullingDescHeap.get(), 0);
+			lightCullingShader->Dispatch(commandList, 0, 1, 1, 1);//Set XY Plane
+			lightCullingShader->Dispatch(commandList, 1, 1, 1, 1);//Set Z Plane
+			lightCullingShader->Dispatch(commandList, 2, 1, 1, ZRES);
+		}
 		tcmd->CloseCommand();
 	}
 };

@@ -9,7 +9,7 @@
 #include "PostProcessingComponent.h"
 #include "../RenderComponent/RenderCommand.h"
 #include "LightingComponent.h"
-#include "BaseColorComponent.h"
+#include "DepthComponent.h"
 #include "../Singleton/PSOContainer.h"
 //ThreadCommand* threadCommand;
 RenderPipeline* RenderPipeline::current(nullptr);
@@ -47,9 +47,9 @@ RenderPipeline::RenderPipeline(ID3D12Device* device, ID3D12GraphicsCommandList* 
 	//Init All Events Here
 	Init<PrepareComponent>();
 	Init<LightingComponent>();
-	Init<GBufferComponent>();
+	Init<DepthComponent>();
 	Init<SkyboxComponent>();
-	Init<BaseColorComponent>();
+	Init<GBufferComponent>();
 	Init<PostProcessingComponent>();
 
 	for (UINT i = 0, size = components.size(); i < size; ++i)

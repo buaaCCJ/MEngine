@@ -115,11 +115,20 @@ void GetOpaqueStandardShader(ID3D12Device* device, JobBucket* bucket)
 	dp.rasterizeState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	dp.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	dp.depthStencilState = depthPrepassDesc;
-	const UINT SHADER_VAR_COUNT = 2;
+	const UINT SHADER_VAR_COUNT = 11;
 	ShaderVariable var[SHADER_VAR_COUNT]
 	{
 		ConstantBuffer::GetShaderVar(0, 0, "Per_Object_Buffer"),
-		ConstantBuffer::GetShaderVar(1, 0,"Per_Camera_Buffer")
+		ConstantBuffer::GetShaderVar(1, 0,"Per_Camera_Buffer"),
+		Texture2D::GetShaderVar(6, 0, 0, "_MainTex"),
+		Texture2D::GetShaderVar(6, 0, 1, "_GreyTex"),
+		Texture2D::GetShaderVar(6, 0, 2, "_IntegerTex"),
+		Texture2D::GetShaderVar(6, 0, 3, "_Cubemap"),
+		StructuredBuffer::GetShaderVar(2, 4, "_DefaultMaterials"),
+		StructuredBuffer::GetShaderVar(0, 4,"_AllLight"),
+		StructuredBuffer::GetShaderVar(1,4,"_LightIndexBuffer"),
+		ConstantBuffer::GetShaderVar(2, 0,"LightCullCBuffer"),
+		ConstantBuffer::GetShaderVar(3, 0, "TextureIndices")
 	};
 	Shader* opaqueShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
 	ShaderCompiler::AddShader("OpaqueStandard", opaqueShader);
@@ -156,63 +165,6 @@ void GetSkyboxShader(ID3D12Device* device, JobBucket* bucket)
 	};
 	Shader* skyboxShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
 	ShaderCompiler::AddShader("Skybox", skyboxShader);
-}
-
-void GetGBufferRenderingShader(ID3D12Device* device, JobBucket* bucket)
-{
-	//ZWrite
-	D3D12_DEPTH_STENCIL_DESC dsDesc;
-	dsDesc.DepthEnable = TRUE;
-	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	dsDesc.StencilEnable = FALSE;
-	dsDesc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-	dsDesc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-	const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
-	{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-	dsDesc.FrontFace = defaultStencilOp;
-	dsDesc.BackFace = defaultStencilOp;
-	//Cull
-	D3D12_RASTERIZER_DESC cullDesc;
-	cullDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	cullDesc.CullMode = D3D12_CULL_MODE_NONE;
-	cullDesc.FrontCounterClockwise = FALSE;
-	cullDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-	cullDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-	cullDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	cullDesc.DepthClipEnable = FALSE;
-	cullDesc.MultisampleEnable = FALSE;
-	cullDesc.AntialiasedLineEnable = FALSE;
-	cullDesc.ForcedSampleCount = 0;
-	cullDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-	const UINT PASS_COUNT = 1;
-	Pass allPasses[PASS_COUNT];
-	Pass& p = allPasses[0];
-	p.fragment = "frag";
-	p.vertex = "vert";
-	p.filePath = L"Shaders\\GBuffer.hlsl";
-	p.name = "GBuffer";
-	p.rasterizeState = cullDesc;
-	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	p.depthStencilState = dsDesc;
-
-	const UINT SHADER_VAR_COUNT = 10;
-	ShaderVariable var[SHADER_VAR_COUNT] =
-	{
-		Texture2D::GetShaderVar(6, 0, 0, "_MainTex"),
-		Texture2D::GetShaderVar(6, 0, 1, "_GreyTex"),
-		Texture2D::GetShaderVar(6, 0, 2, "_IntegerTex"),
-		Texture2D::GetShaderVar(6, 0, 3, "_Cubemap"),
-		ConstantBuffer::GetShaderVar(0, 0, "Per_Camera_Buffer"),
-		StructuredBuffer::GetShaderVar(0, 4,"_AllLight"),
-		StructuredBuffer::GetShaderVar(1,4,"_LightIndexBuffer"),
-		ConstantBuffer::GetShaderVar(1, 0,"LightCullCBuffer"),
-		ConstantBuffer::GetShaderVar(2, 0, "TextureIndices"),
-		StructuredBuffer::GetShaderVar(2, 4, "_DefaultMaterials")
-	};
-
-	Shader* gbufferShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
-	ShaderCompiler::AddShader("GBuffer", gbufferShader);
 }
 
 void GetTemporalAAShader(ID3D12Device* device, JobBucket* bucket)
@@ -361,7 +313,6 @@ void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 	GetTemporalAAShader(device, bucket);
 	GetPreintShader(device, bucket);
 	GetClusterBasedLightCullingShader(device, bucket);
-	GetGBufferRenderingShader(device, bucket);
 #ifdef SHADER_MULTICORE_COMPILE
 	jobSys->ExecuteBucket(bucket, 1);
 #endif

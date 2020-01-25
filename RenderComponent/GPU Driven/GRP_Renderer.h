@@ -63,6 +63,7 @@ public:
 		UINT shaderID,
 		UINT materialID
 	);
+	inline Shader* GetShader() const { return shader; }
 	static CBufferPool* GetCullDataPool(UINT initCapacity);
 	void RemoveElement(Transform* trans, ID3D12Device* device);
 	void UpdateRenderer(Transform* targetTrans, Mesh* mesh, ID3D12Device* device);
@@ -87,7 +88,6 @@ public:
 		ID3D12Device* device,
 		UINT targetShaderPass,
 		ConstBufferElement& cameraProperty,
-		PSOContainer* container,
-		DescriptorHeap* heap
+		PSOContainer* container
 	);
 };

@@ -1,3 +1,16 @@
+	#include "Include/Sampler.cginc"
+	#include "Include/Common.hlsl"
+	#include "Include/Montcalo_Library.hlsl"
+	#include "Include/BSDF_Library.hlsl"
+	#include "Include/ShadingModel.hlsl"
+	#define GBUFFER_SHADER
+	#include "Include/Lighting.cginc"
+
+		Texture2D<float4> _MainTex[6] : register(t0, space0);
+		Texture2D<float> _GreyTex[6] : register(t0, space1);
+		Texture2D<uint> _IntegerTex[6] : register(t0, space2);
+		TextureCube<float4> _Cubemap[6] : register(t0, space3);
+
 cbuffer Per_Object_Buffer : register(b0)
 {
     float4x4 _LastLocalToWorld;
@@ -21,6 +34,58 @@ cbuffer Per_Camera_Buffer : register(b1)
     float _NearZ;
     float _FarZ;
 };
+
+cbuffer LightCullCBuffer : register(b2)
+{
+    float4x4 _inverseVP;
+	float4 _CameraNearPos;
+	float4 _CameraFarPos;
+	float4 _ZBufferParams;
+	float3 _CameraForward;
+	uint _LightCount;
+	float3 _SunColor;
+	uint _SunEnabled;
+	float3 _SunDir;
+	uint _SunShadowEnabled;
+	uint4 _ShadowmapIndices;
+	float4 _CascadeDistance;
+	float4x4 _ShadowMatrix[4];
+};
+
+cbuffer TextureIndices : register(b3)
+{
+	uint _SkyboxTex;
+	uint _PreintTexture;
+};
+
+StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
+StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
+
+struct StandardPBRMaterial
+{
+	float2 uvScale;
+	float2 uvOffset;
+	//align
+	float3 albedo;
+	float metallic;
+	float3 emission;
+	float roughness;
+	//align
+	float occlusion;
+	float cutoff;
+	int albedoTexIndex;
+	int specularTexIndex;
+	//align
+	int normalTexIndex;
+	int emissionTexIndex;
+	float2 __align;
+};
+
+StructuredBuffer<StandardPBRMaterial> _DefaultMaterials : register(t2, space4);
+inline float LinearEyeDepth( float z )
+{
+    return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+}
 
 struct VertexIn
 {
@@ -67,22 +132,53 @@ VertexOut VS(VertexIn vin)
 }
 
 void PS(VertexOut i, 
-        out float4 tangentTex : SV_TARGET0,
-        out float4 uvTex : SV_TARGET1,
+        out float4 albedo : SV_TARGET0,
+        out float4 specular : SV_TARGET1,
         out float4 normalTex : SV_TARGET2,
         out float2 motionVectorTex : SV_TARGET3,
-        out uint shaderIDTex : SV_TARGET4,
-        out uint materialIDTex : SV_TARGET5)
+        out float4 emissionRT : SV_TARGET4)
 {
    float2 lastScreenUV = (i.lastProjPos.xy / i.lastProjPos.w) * float2(0.5, 0.5) + 0.5;
    float2 screenUV = (i.currentProjPos.xy / i.currentProjPos.w) * float2(0.5, 0.5) + 0.5;
    motionVectorTex = screenUV - lastScreenUV;
-   uvTex = frac(i.uv);
-   tangentTex = i.tangent * 0.5 + 0.5;
+   float3 viewDir = normalize(worldSpaceCameraPos - i.PosW.xyz);
+   i.NormalW = normalize(i.NormalW);
+    float linearEyeDepth = LinearEyeDepth(i.PosH.z);
+    float3 refl = reflect(-viewDir, i.NormalW);
+		/*	float3 lightColor = CalculateLocalLight(
+				i.texcoord,
+				i.PosW.xyz,
+				linearEyeDepth,
+				worldNormal,
+				viewDir,
+				_CameraNearPos.w,
+				_CameraFarPos.w,
+				_LightIndexBuffer,
+				_AllLight
+			);*/
+		
+			//CalculateSunLight_NoShadow(float3 N, float3 V, float3 L, float3 col, float3 AlbedoColor, float3 SpecularColor, float3 Roughness)
+			BSDFContext context = (BSDFContext)0;
+			float3 sunColor = CalculateSunLight_NoShadow(
+				i.NormalW,
+				viewDir,
+				-_SunDir,
+				_SunColor,
+				0.8,
+				0.2,
+				1,
+				context
+			);
+			float4 skyboxColor = _Cubemap[_SkyboxTex].SampleLevel(trilinearClampSampler, refl, 10);
+			float2 preintAB = _MainTex[_PreintTexture].SampleLevel(bilinearClampSampler, float2(1, context.NoV), 0).rg;
+			float3 EnergyCompensation;
+			float3 preint = PreintegratedDGF_LUT(preintAB, EnergyCompensation, skyboxColor.xyz);
+			preint *= EnergyCompensation;
+
+   albedo = 0;
+   specular = 0;
    normalTex = float4(i.NormalW * 0.5 + 0.5, 1);
-   shaderIDTex = _ID.x;
-   materialIDTex = _ID.y;
-   
+   emissionRT = float4(sunColor + preint, 1);
 }
 
 float4 VS_Depth(float3 position : POSITION) : SV_POSITION

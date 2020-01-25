@@ -181,7 +181,7 @@ void CrateApp::Draw(const GameTimer& gt)
 		UpdateCamera(gt);
 
 		mainCamera->SetLens(0.333333 * MathHelper::Pi, AspectRatio(), 1.5, 100);
-		World::GetInstance()->Update(FrameResource::mCurrFrameResource);
+		World::GetInstance()->Update(FrameResource::mCurrFrameResource, md3dDevice.Get());
 
 	});
 	//Rendering
