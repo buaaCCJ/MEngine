@@ -15,6 +15,7 @@ cbuffer LightCullCBuffer : register(b0)
 	uint4 _ShadowmapIndices;
 	float4 _CascadeDistance;
 	float4x4 _ShadowMatrix[4];
+	uint _ReflectionProbeCount;
 };
 RWTexture2D<float4> _MainTex[2] : register(u0, space0);//All Random Write Texture
 
@@ -22,8 +23,10 @@ RWTexture3D<float4> _XYPlaneTexture : register(u0, space0);
 RWTexture2D<float4> _ZPlaneTexture : register(u1, space0);
 
 RWStructuredBuffer<uint> _LightIndexBuffer : register(u0, space1);
+RWStructuredBuffer<uint> _ReflectionIndexBuffer : register(u1, space1);
 
 StructuredBuffer<LightCommand> _AllLight : register(t0);
+StructuredBuffer<ReflectionProbe> _AllReflectionProbe : register(t1);
 
 
 inline float2 LinearEyeDepth( float2 z )
@@ -164,4 +167,22 @@ void CBDR(uint3 id : SV_DISPATCHTHREADID)
         }
     }
 	_LightIndexBuffer[sBufferIndex - 1] = clusterCount + sBufferIndex;
+/*	clusterCount = 0;
+	[loop]
+	for(i = 0; i < _ReflectionProbeCount; ++i)
+	{
+		ReflectionProbe probe = _AllReflectionProbe[i];
+		float3 boxMax = probe.position + probe.maxExtent;
+		float3 boxMin = probe.position - probe.maxExtent;
+		float outOfRange = dot(boxMax < minPoint, 1) + dot(boxMin > maxPoint, 1);
+		if(outOfRange < 0.5)
+		{
+			if(BoxIntersect(probe.maxExtent, probe.position, planes) > 0.5)
+			{
+				_ReflectionIndexBuffer[sBufferIndex + clusterCount] = i;
+				clusterCount++;
+			}
+		}
+	}
+	_ReflectionIndexBuffer[sBufferIndex - 1] = clusterCount + sBufferIndex;*/
 }

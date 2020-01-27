@@ -179,6 +179,8 @@ ComPtr<ID3DBlob> d3dUtil::CompileShader(
 	UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #if defined(DEBUG) || defined(_DEBUG)  
 	compileFlags |= D3DCOMPILE_DEBUG;
+#else
+	compileFlags |= D3DCOMPILE_SKIP_VALIDATION;
 #endif
 
 	HRESULT hr = S_OK;

@@ -50,6 +50,7 @@ cbuffer LightCullCBuffer : register(b2)
 	uint4 _ShadowmapIndices;
 	float4 _CascadeDistance;
 	float4x4 _ShadowMatrix[4];
+	uint _ReflectionProbeCount;
 };
 
 cbuffer TextureIndices : register(b3)

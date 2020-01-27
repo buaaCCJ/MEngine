@@ -28,6 +28,15 @@ struct LightCommand{
 	float spotRadius;
 	float3 __align;
 };
+
+struct ReflectionProbe
+{
+	float3 position;
+	float3 minExtent;
+	float3 maxExtent;
+	uint cubemapIndex;
+};
+
 uint GetIndex(uint3 id, uint3 size, uint multiply){
 	uint3 multiValue = uint3(1, size.x, size.x * size.y) * multiply;
     return (uint)dot(id, multiValue);

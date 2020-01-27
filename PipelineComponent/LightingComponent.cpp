@@ -21,29 +21,31 @@ std::vector<LightCommand> lights;
 ComputeShader* lightCullingShader;
 
 
-UINT _LightIndexBuffer;
-UINT _AllLight;
-UINT LightCullCBufferID;
+uint _LightIndexBuffer;
+uint _AllLight;
+uint LightCullCBufferID;
 
 
 struct LightCullCBuffer
 {
-	XMFLOAT4X4 _InvVP;
-	XMFLOAT4 _CameraNearPos;
-	XMFLOAT4 _CameraFarPos;
-	XMFLOAT4 _ZBufferParams;
+	float4x4 _InvVP;
+	float4 _CameraNearPos;
+	float4 _CameraFarPos;
+	float4 _ZBufferParams;
 	//Align
-	XMFLOAT3 _CameraForward;
-	UINT _LightCount;
+	float3 _CameraForward;
+	uint _LightCount;
 	//Align
-	XMFLOAT3 _SunColor;
-	UINT _SunEnabled;
-	XMFLOAT3 _SunDir;
-	UINT _SunShadowEnabled;
-	XMUINT4 _ShadowmapIndices;
-	XMFLOAT4 _CascadeDistance;
-	XMFLOAT4X4 _ShadowMatrix[4];
+	float3 _SunColor;
+	uint _SunEnabled;
+	float3 _SunDir;
+	uint _SunShadowEnabled;
+	uint4 _ShadowmapIndices;
+	float4 _CascadeDistance;
+	float4x4 _ShadowMatrix[4];
+	uint _ReflectionProbeCount;
 };
+
 void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	SetCPUDepending<PrepareComponent>();
@@ -62,7 +64,7 @@ void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLi
 		));
 	StructuredBufferElement ele;
 	ele.elementCount = XRES * YRES * ZRES * (MAXLIGHTPERCLUSTER + 1);
-	ele.stride = sizeof(UINT);
+	ele.stride = sizeof(uint);
 	lightIndexBuffer = std::unique_ptr<StructuredBuffer>(
 		new StructuredBuffer(
 			device, &ele, 1
@@ -119,15 +121,15 @@ struct LightingRunnable
 		});
 		if (lightData->lightsInFrustum.GetElementCount() < lights.size())
 		{
-			UINT maxSize = max(lights.size(), (UINT)(lightData->lightsInFrustum.GetElementCount() * 1.5));
+			uint maxSize = max(lights.size(), (uint)(lightData->lightsInFrustum.GetElementCount() * 1.5));
 			lightData->lightsInFrustum.Create(device, maxSize, false, sizeof(LightCommand));
 		}
 		LightCullCBuffer& cb = *(LightCullCBuffer*)lightData->lightCBuffer.GetMappedDataPtr(0);
 		XMVECTOR farPos = cam->GetPosition() + clusterLightFarPlane * cam->GetLook();
-		memcpy(&cb._CameraFarPos, &farPos, sizeof(XMFLOAT3));
+		memcpy(&cb._CameraFarPos, &farPos, sizeof(float3));
 		cb._CameraFarPos.w = clusterLightFarPlane;
 		XMVECTOR nearPos = cam->GetPosition() + cam->GetNearZ() * cam->GetLook();
-		memcpy(&cb._CameraNearPos, &nearPos, sizeof(XMFLOAT3));
+		memcpy(&cb._CameraNearPos, &nearPos, sizeof(float3));
 		cb._CameraNearPos.w = cam->GetNearZ();
 		cb._InvVP = prepareComp->passConstants.InvViewProj;
 		cb._ZBufferParams = prepareComp->_ZBufferParams;
@@ -138,20 +140,20 @@ struct LightingRunnable
 		cb._SunEnabled = 1;
 		cb._SunDir = { -0.75, -0.5, 0.4330126 };
 		cb._SunShadowEnabled = 0;
-		cb._ShadowmapIndices = {0,0,0,0};
-		
+		cb._ShadowmapIndices = { 0,0,0,0 };
+
 		if (!lights.empty())
 		{
 			lightData->lightsInFrustum.CopyDatas(0, lights.size(), lights.data());
-			lightCullingShader->BindRootSignature(commandList, selfPtr->cullingDescHeap.get());
-			lightCullingShader->SetResource(commandList, _LightIndexBuffer, selfPtr->lightIndexBuffer.get(), 0);
-			lightCullingShader->SetResource(commandList, _AllLight, &lightData->lightsInFrustum, 0);
-			lightCullingShader->SetResource(commandList, LightCullCBufferID, &lightData->lightCBuffer, 0);
-			lightCullingShader->SetResource(commandList, ShaderID::GetMainTex(), selfPtr->cullingDescHeap.get(), 0);
-			lightCullingShader->Dispatch(commandList, 0, 1, 1, 1);//Set XY Plane
-			lightCullingShader->Dispatch(commandList, 1, 1, 1, 1);//Set Z Plane
-			lightCullingShader->Dispatch(commandList, 2, 1, 1, ZRES);
 		}
+		lightCullingShader->BindRootSignature(commandList, selfPtr->cullingDescHeap.get());
+		lightCullingShader->SetResource(commandList, _LightIndexBuffer, selfPtr->lightIndexBuffer.get(), 0);
+		lightCullingShader->SetResource(commandList, _AllLight, &lightData->lightsInFrustum, 0);
+		lightCullingShader->SetResource(commandList, LightCullCBufferID, &lightData->lightCBuffer, 0);
+		lightCullingShader->SetResource(commandList, ShaderID::GetMainTex(), selfPtr->cullingDescHeap.get(), 0);
+		lightCullingShader->Dispatch(commandList, 0, 1, 1, 1);//Set XY Plane
+		lightCullingShader->Dispatch(commandList, 1, 1, 1, 1);//Set Z Plane
+		lightCullingShader->Dispatch(commandList, 2, 1, 1, ZRES);
 		tcmd->CloseCommand();
 	}
 };

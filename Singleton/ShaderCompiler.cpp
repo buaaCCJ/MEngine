@@ -241,17 +241,38 @@ void GetClusterBasedLightCullingShader(ID3D12Device* device, JobBucket* bucket)
 	kernelNames[0] = "SetXYPlane";
 	kernelNames[1] = "SetZPlane";
 	kernelNames[2] = "CBDR";
-	const UINT SHADER_VAR_COUNT = 4;
+	const UINT SHADER_VAR_COUNT = 6;
 	ComputeShaderVariable vars[SHADER_VAR_COUNT] =
 	{
 		ConstantBuffer::GetComputeVar(0, 0, "LightCullCBuffer"),
 		RWTexture2D::GetComputeVar(2, 0, 0, "_MainTex"),
 		RWStructuredBuffer::GetComputeVar(0, 1,"_LightIndexBuffer"),
-		StructuredBuffer::GetComputeVar(0, 0, "_AllLight")
+		StructuredBuffer::GetComputeVar(0, 0, "_AllLight"),
+		StructuredBuffer::GetComputeVar(1, 0, "_AllReflectionProbe"),
+		RWStructuredBuffer::GetComputeVar(1, 1, "_ReflectionIndexBuffer")
 	};
 	ComputeShader* cs = new ComputeShader(L"Shaders\\LightCull.compute", kernelNames, KERNEL_COUNT, vars, SHADER_VAR_COUNT, device, bucket);
 	ShaderCompiler::AddComputeShader("LightCull", cs);
 }
+
+void GetTonemapLut3DShader(ID3D12Device* device, JobBucket* bucket)
+{
+	const UINT KERNEL_COUNT = 1;
+	std::string kernelNames[KERNEL_COUNT] = 
+	{
+		"KGenLut3D_AcesTonemap"
+	};
+	const uint SHADER_VAR_COUNT = 3;
+	ComputeShaderVariable vars[SHADER_VAR_COUNT] = 
+	{
+		RWTexture3D::GetComputeVar(1, 0, 0, "_MainTex"),
+		Texture2D::GetComputeVar(1, 0, 0, "_Curves"),
+		ConstantBuffer::GetComputeVar(0, 0, "Params")
+	};
+	ComputeShader* cs = new ComputeShader(L"Shaders\\Lut3DBaker.compute", kernelNames, KERNEL_COUNT, vars, SHADER_VAR_COUNT, device, bucket);
+	ShaderCompiler::AddComputeShader("Lut3DBaker", cs);
+}
+
 
 void GetPreintShader(ID3D12Device* device, JobBucket* bucket)
 {
@@ -311,6 +332,7 @@ void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 	GetCullingShader(device, bucket);
 	GetPostProcessShader(device, bucket);
 	GetTemporalAAShader(device, bucket);
+	GetTonemapLut3DShader(device, bucket);
 	GetPreintShader(device, bucket);
 	GetClusterBasedLightCullingShader(device, bucket);
 #ifdef SHADER_MULTICORE_COMPILE
