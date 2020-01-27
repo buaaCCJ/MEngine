@@ -141,6 +141,7 @@ public:
 			constBufferData._Jitter = camTransData->jitter;
 			constBufferData._LastJitter = camTransData->lastFrameJitter;
 			tempFrameData->taaBuffer.CopyData(0, &constBufferData);
+
 			taaShader->BindRootSignature(commandList, &tempFrameData->srvHeap);
 			taaShader->SetResource(commandList, TAAConstBuffer_Index, &tempFrameData->taaBuffer, 0);
 			taaShader->SetResource(commandList, ShaderID::GetMainTex(), &tempFrameData->srvHeap, 0);

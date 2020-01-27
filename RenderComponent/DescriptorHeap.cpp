@@ -18,7 +18,6 @@ HRESULT DescriptorHeap::Create(
 
 	hCPUHeapStart = pDH->GetCPUDescriptorHandleForHeapStart();
 	hGPUHeapStart = pDH->GetGPUDescriptorHandleForHeapStart();
-
 	HandleIncrementSize = pDevice->GetDescriptorHandleIncrementSize(Desc.Type);
 	return hr;
 }
