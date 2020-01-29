@@ -22,28 +22,28 @@ class MathLib final
 public:
 	MathLib() = delete;
 	~MathLib() = delete;
-	static DirectX::XMVECTOR GetPlane(
-		DirectX::XMVECTOR&& normal,
-		DirectX::XMVECTOR&& inPoint);
-	static DirectX::XMVECTOR GetPlane(
-		DirectX::XMVECTOR&& a,
-		DirectX::XMVECTOR&& b,
-		DirectX::XMVECTOR&& c);
+	static Math::Vector4 GetPlane(
+		Math::Vector3&& normal,
+		Math::Vector3&& inPoint);
+	static Math::Vector4 GetPlane(
+		Math::Vector3&& a,
+		Math::Vector3&& b,
+		Math::Vector3&& c);
 	static bool BoxIntersect(
-		const DirectX::XMMATRIX& localToWorldMatrix,
-		DirectX::XMVECTOR* planes,
-		DirectX::XMVECTOR&& position,
-		DirectX::XMVECTOR&& localExtent);
+		const Math::Matrix4& localToWorldMatrix,
+		Math::Vector4* planes,
+		Math::Vector3&& position,
+		Math::Vector3&& localExtent);
 	static void GetCameraNearPlanePoints(
-		DirectX::XMMATRIX&& localToWorldMatrix,
+		Math::Matrix4&& localToWorldMatrix,
 		double fov,
 		double aspect,
 		double distance,
-		DirectX::XMVECTOR* corners
+		Math::Vector3* corners
 	);
 
 	static void GetPerspFrustumPlanes(
-		DirectX::XMMATRIX&& localToWorldMatrix,
+		Math::Matrix4&& localToWorldMatrix,
 		double fov,
 		double aspect,
 		double nearPlane,
@@ -51,28 +51,22 @@ public:
 		DirectX::XMFLOAT4* frustumPlanes
 	);
 	static void GetFrustumBoundingBox(
-		DirectX::XMMATRIX&& localToWorldMatrix,
+		Math::Matrix4&& localToWorldMatrix,
 		double nearWindowHeight,
 		double farWindowHeight,
 		double aspect,
 		double nearZ,
 		double farZ, 
-		DirectX::XMVECTOR* minValue,
-		DirectX::XMVECTOR* maxValue
+		Math::Vector3* minValue,
+		Math::Vector3* maxValue
 	);
 
 	static float GetDistanceToPlane(
-		DirectX::XMVECTOR&& plane,
-		DirectX::XMVECTOR&& point)
+		Math::Vector4&& plane,
+		Math::Vector4&& point)
 	{
-		DirectX::XMVECTOR dotValue = DirectX::XMVector3Dot(plane, point);
+		Math::Vector3 dotValue = DirectX::XMVector3Dot(plane, point);
 		return ((DirectX::XMFLOAT4*)&dotValue)->x + ((DirectX::XMFLOAT4*)&point)->w;
 	}
 	static bool ConeIntersect(Cone&& cone, DirectX::XMVECTOR&& plane);
-	/*static bool ConeIntersect(Cone cone, DirectX::XMVECTOR plane)
-	{
-		float3 m = cross(cross(plane.xyz, cone.direction), cone.direction);
-		float3 Q = cone.vertex + cone.direction * cone.height + normalize(m) * cone.radius;
-		return PointInsidePlane(cone.vertex, plane) || PointInsidePlane(Q, plane);
-	}*/
 };

@@ -8,8 +8,6 @@ class UploadBuffer : public MObject
 public:
 	void Create(ID3D12Device* device, UINT elementCount, bool isConstantBuffer, size_t stride);
 	UploadBuffer() : MObject() {}
-    UploadBuffer(const UploadBuffer& rhs) = delete;
-    UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
 	virtual ~UploadBuffer()
 	{
 		if (mUploadBuffer != nullptr)

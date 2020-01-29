@@ -4,6 +4,8 @@
 #include <vector>
 #include "../Common/MObject.h"
 class DescriptorHeap;
+class UploadBuffer;
+class FrameResource;
 enum class TextureType : int
 {
 	Tex2D = 0,
@@ -51,10 +53,25 @@ public:
 	{
 		return Resource.Get();
 	}
+	//Async Load
 	Texture(
 		ID3D12Device* device,
 		const std::string& name,
 		const std::wstring& filePath,
+		TextureType type = TextureType::Tex2D
+	);
+	//Sync Copy
+	Texture(
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* commandList,
+		FrameResource* resource,
+		const UploadBuffer& buffer,
+		UINT width,
+		UINT height,
+		UINT depth,
+		TextureType textureType,
+		UINT mipCount,
+		TextureData::LoadFormat format,
 		TextureType type = TextureType::Tex2D
 	);
 	void BindColorBufferToSRVHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device);

@@ -3,7 +3,7 @@
 #include "../RenderComponent/UploadBuffer.h"
 #include "CameraData/CameraTransformData.h"
 #include "../Singleton/MathLib.h"
-using namespace DirectX;
+using namespace Math;
 UINT sampleIndex = 0;
 const UINT k_SampleCount = 8;
 double GetHalton(int index, int radix)
@@ -133,12 +133,12 @@ struct PrepareRunnable
 		ConstBufferElement ele = resource->cameraCBs[camera->GetInstanceID()];
 		ele.buffer->CopyData(ele.element, &ths->passConstants);
 		//Calculate Frustum Planes
-		XMMATRIX localToWorldMatrix;
-		localToWorldMatrix.r[0] = camera->GetRight();
-		localToWorldMatrix.r[1] = camera->GetUp();
-		localToWorldMatrix.r[2] = camera->GetLook();
+		Matrix4 localToWorldMatrix;
+		localToWorldMatrix[0] = camera->GetRight();
+		localToWorldMatrix[1] = camera->GetUp();
+		localToWorldMatrix[2] = camera->GetLook();
 		XMFLOAT3 position = camera->GetPosition3f();
-		localToWorldMatrix.r[3] = { position.x, position.y, position.z, 1 };
+		localToWorldMatrix[3] = { position.x, position.y, position.z, 1 };
 		MathLib::GetPerspFrustumPlanes(std::move(localToWorldMatrix), camera->GetFovY(), camera->GetAspect(), camera->GetNearZ(), camera->GetFarZ(), ths->frustumPlanes);
 		//Calculate Frustum Bounding
 		MathLib::GetFrustumBoundingBox(

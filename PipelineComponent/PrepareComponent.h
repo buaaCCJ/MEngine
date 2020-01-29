@@ -10,8 +10,8 @@ class PrepareComponent : public PipelineComponent
 public:
 	PassConstants passConstants;
 	DirectX::XMFLOAT4 frustumPlanes[6];
-	DirectX::XMVECTOR frustumMinPos;
-	DirectX::XMVECTOR frustumMaxPos;
+	Math::Vector3 frustumMinPos;
+	Math::Vector3 frustumMaxPos;
 	DirectX::XMFLOAT4 _ZBufferParams;
 protected:
 	std::vector<TemporalResourceCommand> useless;

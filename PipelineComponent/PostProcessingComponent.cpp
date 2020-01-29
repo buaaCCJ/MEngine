@@ -7,11 +7,13 @@
 #include "../RenderComponent/DescriptorHeap.h"
 #include "TemporalAA.h"
 #include "../RenderComponent/Texture.h"
+#include "ColorGradingLut.h"
 //#include "SkyboxComponent.h"
 Shader* postShader;
 std::unique_ptr<PSOContainer> backBufferContainer;
 std::unique_ptr<PSOContainer> renderTextureContainer;
 std::unique_ptr<TemporalAA> taaComponent;
+std::unique_ptr<ColorGradingLut> lutComponent;
 //ObjectPtr<Texture> testTex;
 //PrepareComponent* prepareComp = nullptr;
 class PostFrameData : public IPipelineResource
@@ -62,6 +64,9 @@ public:
 			cam,
 			width, height
 		);
+		(*lutComponent)(
+			device,
+			commandList);
 		destMap->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 0, device);
 
 		if (isForPresent)
@@ -151,6 +156,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 	taaComponent->prePareComp = prepareComp;
 	taaComponent->device = device;
 	taaComponent->toRTContainer = renderTextureContainer.get();
+	lutComponent = std::unique_ptr<ColorGradingLut>(new ColorGradingLut());
 /*	testTex = new Texture(
 		device,
 		"Test",
@@ -170,5 +176,6 @@ void PostProcessingComponent::Dispose()
 {
 	backBufferContainer = nullptr;
 	taaComponent = nullptr;
+	lutComponent = nullptr;
 	//testTex.Destroy();
 }

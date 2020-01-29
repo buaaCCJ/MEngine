@@ -65,14 +65,15 @@ float3 LinearGrade(float3 colorLinear)
 
     // Hue Vs Sat
     float satMult;
-    satMult = saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hsv.x, 0.25), 0).y) * 2.0;
-
+   // satMult = saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hsv.x, 0.25), 0).y) * 2.0;
+    satMult = 0.5 * 2.0;
     // Sat Vs Sat
-    satMult *= saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hsv.y, 0.25), 0).z) * 2.0;
+   // satMult *= saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hsv.y, 0.25), 0).z) * 2.0;
+    satMult *= 0.5 * 2.0;
 
     // Lum Vs Sat
-    satMult *= saturate(_Curves.SampleLevel(bilinearClampSampler, float2(Luminance(colorLinear), 0.25), 0).w) * 2.0;
-
+    //satMult *= saturate(_Curves.SampleLevel(bilinearClampSampler, float2(Luminance(colorLinear), 0.25), 0).w) * 2.0;
+    satMult *= 0.5 * 2.0;
     // Hue Vs Hue
     float hue = hsv.x + _HueSatCon.x;
     float offset = saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hue, 0.25), 0).x) - 0.5;

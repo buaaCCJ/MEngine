@@ -69,6 +69,7 @@
     <ClCompile Include="RenderComponent\StructuredBuffer.cpp" />
     <ClCompile Include="RenderComponent\Texture.cpp" />
     <ClCompile Include="RenderComponent\UploadBuffer.cpp" />
+    <ClCompile Include="Singleton\ColorUtility.cpp" />
     <ClCompile Include="Singleton\FrameResource.cpp" />
     <ClCompile Include="Singleton\Graphics.cpp" />
     <ClCompile Include="Singleton\MathLib.cpp" />
@@ -85,6 +86,13 @@
     <ClInclude Include="Common\d3dApp.h" />
     <ClInclude Include="Common\d3dUtil.h" />
     <ClInclude Include="Common\d3dx12.h" />
+    <ClInclude Include="Common\DXMath\Common.h" />
+    <ClInclude Include="Common\DXMath\Matrix3.h" />
+    <ClInclude Include="Common\DXMath\Matrix4.h" />
+    <ClInclude Include="Common\DXMath\Quaternion.h" />
+    <ClInclude Include="Common\DXMath\Scalar.h" />
+    <ClInclude Include="Common\DXMath\Transform.h" />
+    <ClInclude Include="Common\DXMath\Vector.h" />
     <ClInclude Include="Common\GameTimer.h" />
     <ClInclude Include="Common\GeometryGenerator.h" />
     <ClInclude Include="Common\MathHelper.h" />
@@ -107,6 +115,7 @@
     <ClInclude Include="LogicComponent\Transform.h" />
     <ClInclude Include="LogicComponent\World.h" />
     <ClInclude Include="PipelineComponent\CameraData\CameraTransformData.h" />
+    <ClInclude Include="PipelineComponent\ColorGradingLut.h" />
     <ClInclude Include="PipelineComponent\CommandBuffer.h" />
     <ClInclude Include="PipelineComponent\CullTask.h" />
     <ClInclude Include="PipelineComponent\DepthComponent.h" />
@@ -139,6 +148,7 @@
     <ClInclude Include="RenderComponent\Texture.h" />
     <ClInclude Include="RenderComponent\UploadBuffer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Singleton\ColorUtility.h" />
     <ClInclude Include="Singleton\FrameResource.h" />
     <ClInclude Include="Singleton\Graphics.h" />
     <ClInclude Include="Singleton\MathLib.h" />
