@@ -68,5 +68,5 @@ public:
 		Math::Vector3 dotValue = DirectX::XMVector3Dot(plane, point);
 		return ((DirectX::XMFLOAT4*)&dotValue)->x + ((DirectX::XMFLOAT4*)&point)->w;
 	}
-	static bool ConeIntersect(Cone&& cone, DirectX::XMVECTOR&& plane);
+	static bool ConeIntersect(Cone&& cone, Math::Vector4&& plane);
 };

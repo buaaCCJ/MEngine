@@ -24,8 +24,6 @@ namespace Math
 		INLINE Scalar(const Scalar& s) { m_vec = s; }
 		INLINE Scalar(float f) { m_vec = XMVectorReplicate(f); }
 		INLINE explicit Scalar(FXMVECTOR vec) { m_vec = vec; }
-		INLINE explicit Scalar(EZeroTag) { m_vec = SplatZero(); }
-		INLINE explicit Scalar(EIdentityTag) { m_vec = SplatOne(); }
 
 		INLINE operator XMVECTOR() const { return m_vec; }
 		INLINE operator float() const { return XMVectorGetX(m_vec); }

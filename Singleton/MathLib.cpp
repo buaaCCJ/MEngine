@@ -1,13 +1,13 @@
 #include "MathLib.h"
 #include "../Common/MetaLib.h"
 using namespace Math;
-#define GetVec(name, v) XMVECTOR name = XMLoadFloat3(&##v);
+#define GetVec(name, v) Vector4 name = XMLoadFloat3(&##v);
 #define StoreVec(ptr, v) XMStoreFloat3(ptr, v);
-XMVECTOR mul(XMMATRIX& mat, XMVECTOR& vec)
+Vector4 mul(XMMATRIX& mat, Vector4& vec)
 {
 	return XMVector4Transform(vec, XMMatrixTranspose(mat));
 }
-XMVECTOR mul(XMVECTOR& vec, XMMATRIX& mat)
+Vector4 mul(Vector4& vec, XMMATRIX& mat)
 {
 	return XMVector4Transform(vec, mat);
 }
@@ -17,8 +17,8 @@ Vector4 MathLib::GetPlane(
 	Vector3&& b,
 	Vector3&& c)
 {
-	XMVECTOR normal = XMVector3Normalize(XMVector3Cross(b - a, c - a));
-	XMVECTOR disVec = -XMVector3Dot(normal, a);
+	Vector4 normal = XMVector3Normalize(XMVector3Cross(b - a, c - a));
+	Vector4 disVec = -XMVector3Dot(normal, a);
 	memcpy(&disVec, &normal, sizeof(XMFLOAT3));
 	return disVec;
 }
@@ -26,19 +26,19 @@ Vector4 MathLib::GetPlane(
 	Vector3&& normal,
 	Vector3&& inPoint)
 {
-	XMVECTOR dt = -XMVector3Dot(normal, inPoint);
+	Vector4 dt = -XMVector3Dot(normal, inPoint);
 	memcpy(&dt, &normal, sizeof(XMFLOAT3));
 	return dt;
 }
 bool MathLib::BoxIntersect(const Matrix4& localToWorldMatrix, Vector4* planes, Vector3&& position, Vector3&& localExtent)
 {
 	XMMATRIX matrixTranspose = XMMatrixTranspose(localToWorldMatrix);
-	XMVECTOR pos = XMVector3TransformCoord(position, matrixTranspose);
+	Vector4 pos = XMVector3TransformCoord(position, matrixTranspose);
 	auto func = [&](UINT i)->bool
 	{
-		XMVECTOR plane = planes[i];
-		XMVECTOR absNormal = XMVectorAbs(XMVector3TransformNormal(plane, matrixTranspose));
-		XMVECTOR result = XMVector3Dot(pos, plane) - XMVector3Dot(absNormal, localExtent);
+		Vector4 plane = planes[i];
+		Vector4 absNormal = XMVectorAbs(XMVector3TransformNormal(plane, matrixTranspose));
+		Vector4 result = XMVector3Dot(pos, plane) - XMVector3Dot(absNormal, localExtent);
 		float dist = 0; XMFLOAT4 planeF;
 		XMStoreFloat(&dist, result);
 		XMStoreFloat4(&planeF, plane);
@@ -58,9 +58,9 @@ void MathLib::GetCameraNearPlanePoints(
 {
 	double upLength = distance * tan(fov * 0.5);
 	double rightLength = upLength * aspect;
-	XMVECTOR farPoint = localToWorldMatrix[3] + distance * localToWorldMatrix[2];
-	XMVECTOR upVec = upLength * localToWorldMatrix[1];
-	XMVECTOR rightVec = rightLength * localToWorldMatrix[0];
+	Vector4 farPoint = localToWorldMatrix[3] + distance * localToWorldMatrix[2];
+	Vector4 upVec = upLength * localToWorldMatrix[1];
+	Vector4 rightVec = rightLength * localToWorldMatrix[0];
 	corners[0] = farPoint - upVec - rightVec;
 	corners[1] = farPoint - upVec + rightVec;
 	corners[2] = farPoint + upVec - rightVec;
@@ -78,12 +78,12 @@ void MathLib::GetPerspFrustumPlanes(
 {
 	Vector3 nearCorners[4];
 	GetCameraNearPlanePoints(std::move(localToWorldMatrix), fov, aspect, nearPlane, nearCorners);
-	*(XMVECTOR*)frustumPlanes = GetPlane(std::move(localToWorldMatrix[2]), std::move(localToWorldMatrix[3] + farPlane * localToWorldMatrix[2]));
-	*(XMVECTOR*)(frustumPlanes + 1) = GetPlane(-localToWorldMatrix[2], (localToWorldMatrix[3] + nearPlane * localToWorldMatrix[2]));
-	*(XMVECTOR*)(frustumPlanes + 2) = GetPlane(std::move(nearCorners[1]), std::move(nearCorners[0]), std::move(localToWorldMatrix[3]));
-	*(XMVECTOR*)(frustumPlanes + 3) = GetPlane(std::move(nearCorners[2]), std::move(nearCorners[3]), std::move(localToWorldMatrix[3]));
-	*(XMVECTOR*)(frustumPlanes + 4) = GetPlane(std::move(nearCorners[0]), std::move(nearCorners[2]), std::move(localToWorldMatrix[3]));
-	*(XMVECTOR*)(frustumPlanes + 5) = GetPlane(std::move(nearCorners[3]), std::move(nearCorners[1]), std::move(localToWorldMatrix[3]));
+	*(Vector4*)frustumPlanes = GetPlane(std::move(localToWorldMatrix[2]), std::move(localToWorldMatrix[3] + farPlane * localToWorldMatrix[2]));
+	*(Vector4*)(frustumPlanes + 1) = GetPlane(-localToWorldMatrix[2], (localToWorldMatrix[3] + nearPlane * localToWorldMatrix[2]));
+	*(Vector4*)(frustumPlanes + 2) = GetPlane(std::move(nearCorners[1]), std::move(nearCorners[0]), std::move(localToWorldMatrix[3]));
+	*(Vector4*)(frustumPlanes + 3) = GetPlane(std::move(nearCorners[2]), std::move(nearCorners[3]), std::move(localToWorldMatrix[3]));
+	*(Vector4*)(frustumPlanes + 4) = GetPlane(std::move(nearCorners[0]), std::move(nearCorners[2]), std::move(localToWorldMatrix[3]));
+	*(Vector4*)(frustumPlanes + 5) = GetPlane(std::move(nearCorners[3]), std::move(nearCorners[1]), std::move(localToWorldMatrix[3]));
 }
 
 void MathLib::GetFrustumBoundingBox(
@@ -100,11 +100,11 @@ void MathLib::GetFrustumBoundingBox(
 	double halfFarYHeight = farWindowHeight * 0.5;
 	double halfNearXWidth = halfNearYHeight * aspect;
 	double halfFarXWidth = halfFarYHeight * aspect;
-	XMVECTOR poses[8];
-	XMVECTOR pos = localToWorldMatrix[3];
-	XMVECTOR right = localToWorldMatrix[0];
-	XMVECTOR up = localToWorldMatrix[1];
-	XMVECTOR forward = localToWorldMatrix[2];
+	Vector4 poses[8];
+	Vector4 pos = localToWorldMatrix[3];
+	Vector4 right = localToWorldMatrix[0];
+	Vector4 up = localToWorldMatrix[1];
+	Vector4 forward = localToWorldMatrix[2];
 	poses[0] = pos + forward * nearZ - right * halfNearXWidth - up * halfNearYHeight;
 	poses[1] = pos + forward * nearZ - right * halfNearXWidth + up * halfNearYHeight;
 	poses[2] = pos + forward * nearZ + right * halfNearXWidth - up * halfNearYHeight;
@@ -123,11 +123,11 @@ void MathLib::GetFrustumBoundingBox(
 	InnerLoop<decltype(func), 7>(func);
 }
 
-bool MathLib::ConeIntersect(Cone&& cone, XMVECTOR&& plane)
+bool MathLib::ConeIntersect(Cone&& cone, Vector4&& plane)
 {
-	XMVECTOR dir = XMLoadFloat3(&cone.direction);
-	XMVECTOR vertex = XMLoadFloat3(&cone.vertex);
-	XMVECTOR m = XMVector3Cross(XMVector3Cross(plane, dir), dir);
-	XMVECTOR Q = vertex + dir * cone.height + XMVector3Normalize(m) * cone.radius;
+	Vector4 dir = XMLoadFloat3(&cone.direction);
+	Vector4 vertex = XMLoadFloat3(&cone.vertex);
+	Vector4 m = XMVector3Cross(XMVector3Cross(plane, dir), dir);
+	Vector4 Q = vertex + dir * cone.height + (Vector4)XMVector3Normalize(m) * cone.radius;
 	return (GetDistanceToPlane(std::move(vertex), std::move(plane)) < 0) || (GetDistanceToPlane(std::move(Q), std::move(plane)) < 0);
 }

@@ -50,12 +50,11 @@ const float logC_f = 0.092819f;
  Vector3 ColorUtility::ColorToLift(Vector4 color)
 {
 	// Shadows
-	 XMFLOAT4& colorPtr = (XMFLOAT4&)color;
-	 XMFLOAT3 S = { colorPtr.x, colorPtr.y, colorPtr.z};
+	 XMFLOAT3 S = { color.GetX(), color.GetY(), color.GetZ()};
 	 float lumLift = S.x * 0.2126f + S.y * 0.7152f + S.z * 0.0722f;
 	 S = { S.x - lumLift, S.y - lumLift, S.z - lumLift };
 
-	float liftOffset = colorPtr.w;
+	float liftOffset = color.GetW();
 	return { S.x + liftOffset, S.y + liftOffset, S.z + liftOffset};
 }
 
@@ -63,12 +62,11 @@ const float logC_f = 0.092819f;
  Vector3 ColorUtility::ColorToInverseGamma(Vector4 color)
 {
 	// Midtones
-	 XMFLOAT4& colorPtr = (XMFLOAT4&)color;
-	 XMFLOAT3 M = { colorPtr.x, colorPtr.y, colorPtr.z };
+	 XMFLOAT3 M = { color.GetX(), color.GetY(), color.GetZ() };
 	float lumGamma = M.x * 0.2126f + M.y * 0.7152f + M.z * 0.0722f;
 	M = { M.x - lumGamma, M.y - lumGamma, M.z - lumGamma };
 
-	float gammaOffset = colorPtr.w + 1;
+	float gammaOffset = (float)color.GetW() + 1;
 	return {
 		1 / max(M.x + gammaOffset, 1e-03f),
 		1 / max(M.y + gammaOffset, 1e-03f),
@@ -80,12 +78,11 @@ const float logC_f = 0.092819f;
  Vector3 ColorUtility::ColorToGain(Vector4 color)
 {
 	// Highlights
-	 XMFLOAT4& colorPtr = (XMFLOAT4&)color;
-	 XMFLOAT3 H = { colorPtr.x, colorPtr.y, colorPtr.z };
+	 XMFLOAT3 H = { color.GetX(), color.GetY(), color.GetZ() };
 	float lumGain = H.x * 0.2126f + H.y * 0.7152f + H.z * 0.0722f;
 	H = { H.x - lumGain, H.y - lumGain, H.z - lumGain };
 
-	float gainOffset = colorPtr.w + 1;
+	float gainOffset = (float)color.GetW() + 1;
 	return { H.x + gainOffset, H.y + gainOffset, H.z + gainOffset };
 }
 

@@ -15,9 +15,9 @@
 
 #include <DirectXMath.h>
 #include <intrin.h>
-
-#define INLINE __forceinline
 typedef unsigned int uint;
+#define INLINE __forceinline
+
 namespace Math
 {
 	template <typename T> __forceinline T AlignUpWithMask(T value, size_t mask)
