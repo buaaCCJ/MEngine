@@ -51,6 +51,7 @@ public:
 		ID3D12Device* device,
 		JobBucket* compileJob);
 	size_t VariableLength() const { return mVariablesVector.size(); }
+	void BindRootSignature(ID3D12GraphicsCommandList* commandList);
 	void BindRootSignature(ID3D12GraphicsCommandList* commandList, DescriptorHeap* heap);
 	void SetResource(ID3D12GraphicsCommandList* commandList, UINT id, MObject* targetObj, UINT indexOffset);
 	void SetStructuredBufferByAddress(ID3D12GraphicsCommandList* commandList, UINT id, D3D12_GPU_VIRTUAL_ADDRESS address);

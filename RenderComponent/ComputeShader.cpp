@@ -161,11 +161,15 @@ ComputeShader::ComputeShader(
 
 
 
+void ComputeShader::BindRootSignature(ID3D12GraphicsCommandList* commandList)
+{
+	commandList->SetComputeRootSignature(mRootSignature.Get());
+}
+
 void ComputeShader::BindRootSignature(ID3D12GraphicsCommandList* commandList, DescriptorHeap* heap)
 {
 	commandList->SetComputeRootSignature(mRootSignature.Get());
-	if (heap != nullptr)
-		heap->SetDescriptorHeap(commandList);
+	heap->SetDescriptorHeap(commandList);
 }
 
 void ComputeShader::SetResource(ID3D12GraphicsCommandList* commandList, UINT id, MObject* targetObj, UINT indexOffset)

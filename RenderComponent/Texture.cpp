@@ -218,7 +218,7 @@ Texture::Texture(
 	TextureType textureType,
 	UINT mipCount,
 	TextureData::LoadFormat format,
-	TextureType type) : 
+	TextureType type) :
 	mType(type)
 {
 	if (type == TextureType::Cubemap)
@@ -294,7 +294,7 @@ Filename(filePath)
 	ReadData(filePath, data, dataResults);
 	if (data.textureType != type)
 		throw "Texture Type Not Match Exception";
-	
+
 	if (type == TextureType::Cubemap && data.depth != 6)
 		throw "Cubemap's tex size must be 6";
 	switch (data.format)

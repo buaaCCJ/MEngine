@@ -28,17 +28,6 @@ cbuffer Params : register(b0){
     float4 _Lift;
     float4 _InvGamma;
     float4 _Gain;
-
-    float4 _CustomToneCurve;
-
-    // Packing is currently borked, can't pass float arrays without it creating one vector4 per
-    // float so we'll pack manually...
-    float4 _ToeSegmentA;
-    float4 _ToeSegmentB;
-    float4 _MidSegmentA;
-    float4 _MidSegmentB;
-    float4 _ShoSegmentA;
-    float4 _ShoSegmentB;
 };
 
 
@@ -76,7 +65,8 @@ float3 LinearGrade(float3 colorLinear)
     satMult *= 0.5 * 2.0;
     // Hue Vs Hue
     float hue = hsv.x + _HueSatCon.x;
-    float offset = saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hue, 0.25), 0).x) - 0.5;
+    //float offset = saturate(_Curves.SampleLevel(bilinearClampSampler, float2(hue, 0.25), 0).x) - 0.5;
+    float offset = 0.5 - 0.5;
     hue += offset;
     hsv.x = RotateHue(hue, 0.0, 1.0);
 

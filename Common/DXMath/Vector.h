@@ -63,6 +63,18 @@ namespace Math
 		INLINE friend Vector3 operator* (float   v1, const Vector3& v2) { return Scalar(v1) * v2; }
 		INLINE friend Vector3 operator/ (float   v1, const Vector3& v2) { return Scalar(v1) / v2; }
 
+		INLINE operator XMFLOAT4()
+		{
+			XMFLOAT4 f;
+			XMStoreFloat4(&f, m_vec);
+			return f;
+		}
+		INLINE operator XMFLOAT3()
+		{
+			XMFLOAT3 f;
+			XMStoreFloat3(&f, m_vec);
+			return f;
+		}
 	protected:
 		XMVECTOR m_vec;
 	};
@@ -107,7 +119,18 @@ namespace Math
 		INLINE friend Vector4 operator/ (const Scalar&  v1, const Vector4& v2) { return Vector4(v1) / v2; }
 		INLINE friend Vector4 operator* (float   v1, const Vector4& v2) { return Scalar(v1) * v2; }
 		INLINE friend Vector4 operator/ (float   v1, const Vector4& v2) { return Scalar(v1) / v2; }
-
+		INLINE operator XMFLOAT4()
+		{
+			XMFLOAT4 f;
+			XMStoreFloat4(&f, m_vec);
+			return f;
+		}
+		INLINE operator XMFLOAT3()
+		{
+			XMFLOAT3 f;
+			XMStoreFloat3(&f, m_vec);
+			return f;
+		}
 	protected:
 		XMVECTOR m_vec;
 	};

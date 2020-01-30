@@ -361,7 +361,7 @@ void GRP_Renderer::Culling(
 		cullResultBuffer->TransformBufferState(commandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 		isIndirect = true;
 	}
-	cullShader->BindRootSignature(commandList, nullptr);
+	cullShader->BindRootSignature(commandList);
 	UINT dispatchCount = (UINT)ceil(elements.size() / 64.0);
 	UINT capacity = this->capacity;
 	GpuDrivenRenderer* perFrameData = (GpuDrivenRenderer*)targetResource->GetResource(this, [=]()->GpuDrivenRenderer*
