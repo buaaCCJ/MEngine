@@ -31,10 +31,10 @@ struct TAAFrameData : public IPipelineResource
 {
 	UploadBuffer taaBuffer;
 	DescriptorHeap srvHeap;
-	TAAFrameData(ID3D12Device* device)
+	TAAFrameData(ID3D12Device* device) : 
+		taaBuffer(device, 1, true, sizeof(TAAConstBuffer)),
+		srvHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6, true)
 	{
-		taaBuffer.Create(device, 1, true, sizeof(TAAConstBuffer));
-		srvHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6, true);
 	}
 };
 

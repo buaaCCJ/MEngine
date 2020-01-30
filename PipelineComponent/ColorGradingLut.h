@@ -41,16 +41,16 @@ public:
 	std::unique_ptr<RenderTexture> lut = nullptr;
 	UploadBuffer cbuffer;
 	DescriptorHeap heap;
-	ColorGradingLut(ID3D12Device* device)
-	{
-		heap.Create(
+	ColorGradingLut(ID3D12Device* device) :
+		heap(
 			device,
 			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 			1,
-			true);
-		cbuffer.Create(
+			true),
+		cbuffer(
 			device, 1,
-			true, sizeof(ColorGradingCBuffer));
+			true, sizeof(ColorGradingCBuffer))
+	{
 	}
 	void operator()(
 		ID3D12Device* device,

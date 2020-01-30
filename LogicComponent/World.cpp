@@ -14,9 +14,8 @@ void BuildShapeGeometry(GeometryGenerator::MeshData& box, ObjectPtr<Mesh>& bMesh
 World::World(ID3D12GraphicsCommandList* commandList, ID3D12Device* device) :
 	usedDescs(MAXIMUM_HEAP_COUNT),
 	unusedDescs(MAXIMUM_HEAP_COUNT),
-	globalDescriptorHeap(new DescriptorHeap)
+	globalDescriptorHeap(new DescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAXIMUM_HEAP_COUNT, true))
 {
-	globalDescriptorHeap->Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAXIMUM_HEAP_COUNT, true);
 	for (UINT i = 0; i < MAXIMUM_HEAP_COUNT; ++i)
 	{
 		unusedDescs[i] = i;

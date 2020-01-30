@@ -6,8 +6,15 @@ class FrameResource;
 class UploadBuffer : public MObject
 {
 public:
+	UploadBuffer(ID3D12Device* device, UINT elementCount, bool isConstantBuffer, size_t stride);
+	UploadBuffer() :
+		mMappedData(0),
+		mUploadBuffer(nullptr),
+		mStride(0),
+		mElementCount(0),
+		mElementByteSize(0),
+		mIsConstantBuffer(false) {}
 	void Create(ID3D12Device* device, UINT elementCount, bool isConstantBuffer, size_t stride);
-	UploadBuffer() : MObject() {}
 	virtual ~UploadBuffer()
 	{
 		if (mUploadBuffer != nullptr)
@@ -70,10 +77,10 @@ private:
 		UINT startIndex;
 		UINT count;
 	};
-	void* mMappedData = 0;
-    Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer = nullptr;
-	size_t mStride = 0;
-	UINT mElementCount = 0;
-    UINT mElementByteSize = 0;
-    bool mIsConstantBuffer = false;
+	void* mMappedData;
+    Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
+	size_t mStride;
+	UINT mElementCount;
+    UINT mElementByteSize;
+    bool mIsConstantBuffer;
 };

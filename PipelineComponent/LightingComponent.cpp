@@ -69,8 +69,7 @@ void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLi
 		new StructuredBuffer(
 			device, &ele, 1
 		));
-	cullingDescHeap = std::make_unique<DescriptorHeap>();
-	cullingDescHeap->Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true);
+	cullingDescHeap = std::unique_ptr<DescriptorHeap>(new DescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true));
 	xyPlaneTexture->BindUAVToHeap(cullingDescHeap.get(), 0, device, 0);
 	zPlaneTexture->BindUAVToHeap(cullingDescHeap.get(), 1, device, 0);
 	_LightIndexBuffer = ShaderID::PropertyToID("_LightIndexBuffer");
@@ -89,10 +88,10 @@ std::vector<TemporalResourceCommand>& LightingComponent::SendRenderTextureRequir
 	return tempResources;
 }
 
-LightFrameData::LightFrameData(ID3D12Device* device)
+LightFrameData::LightFrameData(ID3D12Device* device) : 
+	lightsInFrustum(device, 50, false, sizeof(LightCommand)),
+	lightCBuffer(device, 1, true, sizeof(LightCullCBuffer))
 {
-	lightsInFrustum.Create(device, 50, false, sizeof(LightCommand));
-	lightCBuffer.Create(device, 1, true, sizeof(LightCullCBuffer));
 }
 struct LightingRunnable
 {

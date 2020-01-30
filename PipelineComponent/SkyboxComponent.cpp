@@ -17,13 +17,11 @@ class SkyboxPerFrameData : public IPipelineResource
 {
 public:
 	UploadBuffer posBuffer;
-	SkyboxPerFrameData(ID3D12Device* device)
-	{
-		posBuffer.Create(
-			device,
+	SkyboxPerFrameData(ID3D12Device* device) : 
+		posBuffer(device,
 			1, true,
-			sizeof(SkyboxBuffer)
-		);
+			sizeof(SkyboxBuffer))
+	{
 	}
 };
 

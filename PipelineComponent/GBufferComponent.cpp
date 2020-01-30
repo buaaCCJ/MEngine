@@ -49,11 +49,11 @@ struct GBufferFrameData : public IPipelineResource
 {
 	UploadBuffer texIndicesBuffer;
 	uint descs[TEX_COUNT];
-	GBufferFrameData(ID3D12Device* device)
-	{
-		texIndicesBuffer.Create(
+	GBufferFrameData(ID3D12Device* device) : 
+		texIndicesBuffer(
 			device, 1, true, sizeof(TextureIndices)
-		);
+		)
+	{
 		World* world = World::GetInstance();
 		for (uint i = 0; i < TEX_COUNT; ++i)
 		{

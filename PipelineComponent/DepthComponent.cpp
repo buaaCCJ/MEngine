@@ -14,10 +14,9 @@ class DepthFrameResource : public IPipelineResource
 public:
 	UploadBuffer ub;
 	UploadBuffer cullBuffer;
-	DepthFrameResource(ID3D12Device* device)
+	DepthFrameResource(ID3D12Device* device) : cullBuffer(device, 1, true, sizeof(GRP_Renderer::CullData)),
+		ub(device, 2, true, sizeof(ObjectConstants))
 	{
-		cullBuffer.Create(device, 1, true, sizeof(GRP_Renderer::CullData));
-		ub.Create(device, 2, true, sizeof(ObjectConstants));
 		float4x4 mat = MathHelper::Identity4x4();
 		XMMATRIX* vec = (XMMATRIX*)&mat;
 		vec->r[3] = { 0, 0, 0, 1 };

@@ -4,8 +4,7 @@
 
 void CBufferPool::Add(ID3D12Device* device)
 {
-	UploadBuffer* tPtr = new UploadBuffer();
-	tPtr->Create(device, capacity, true, stride);
+	UploadBuffer* tPtr = new UploadBuffer(device, capacity, true, stride);
 	arr.push_back(tPtr);
 	for (UINT i = 0; i < capacity; ++i)
 	{

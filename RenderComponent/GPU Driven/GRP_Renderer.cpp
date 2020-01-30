@@ -54,13 +54,11 @@ public:
 		ID3D12Device* device,
 		UINT capacity
 	) : capacity(capacity), count(0),
-		objectPool(sizeof(ObjectConstants), capacity)
+		objectPool(sizeof(ObjectConstants), capacity),
+		objectPosBuffer(new UploadBuffer(device, capacity, false, sizeof(ObjectData))),
+		cmdDrawBuffers(new UploadBuffer(device, capacity, false, sizeof(MultiDrawCommand)))
 	{
 		allocatedObjects.reserve(capacity);
-		objectPosBuffer = std::unique_ptr<UploadBuffer>(new UploadBuffer());
-		cmdDrawBuffers = std::unique_ptr<UploadBuffer>(new UploadBuffer());
-		objectPosBuffer->Create(device, capacity, false, sizeof(ObjectData));
-		cmdDrawBuffers->Create(device, capacity, false, sizeof(MultiDrawCommand));
 		
 	}
 
@@ -71,10 +69,8 @@ public:
 		if (targetCapacity <= capacity) return;
 		UINT autoCapac = (UINT)(capacity * 1.5);
 		targetCapacity = max(targetCapacity, autoCapac);
-		UploadBuffer* newObjBuffer = new UploadBuffer();
-		UploadBuffer* newCmdDrawBuffer = new UploadBuffer();
-		newObjBuffer->Create(device, targetCapacity, false, sizeof(ObjectData));
-		newCmdDrawBuffer->Create(device, targetCapacity, false, sizeof(MultiDrawCommand));
+		UploadBuffer* newObjBuffer = new UploadBuffer(device, targetCapacity, false, sizeof(ObjectData));
+		UploadBuffer* newCmdDrawBuffer = new UploadBuffer(device, targetCapacity, false, sizeof(MultiDrawCommand));
 		newObjBuffer->CopyFrom(objectPosBuffer.get(), 0, 0, capacity);
 		newCmdDrawBuffer->CopyFrom(cmdDrawBuffers.get(), 0, 0, capacity);
 

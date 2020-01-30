@@ -98,9 +98,9 @@ public:
 		UINT mip,
 		UINT arraySize,
 		TextureType type) :
-		res(res), loadFormat(loadFormat), width(width), height(height), mip(mip), arraySize(arraySize), type(type)
+		res(res), loadFormat(loadFormat), width(width), height(height), mip(mip), arraySize(arraySize), type(type),
+		ubuffer(device, element + 2048, false, 1)
 	{
-		ubuffer.Create(device, element + 2048, false, 1);
 		ubuffer.CopyDatas(0, element, dataPtr);
 	}
 

@@ -20,9 +20,8 @@ class PostFrameData : public IPipelineResource
 {
 public:
 	DescriptorHeap postSRVHeap;
-	PostFrameData(ID3D12Device* device)
+	PostFrameData(ID3D12Device* device) : postSRVHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, true)
 	{
-		postSRVHeap.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, true);
 	}
 };
 class PostRunnable
