@@ -36,9 +36,22 @@ struct ColorGradingCBuffer
 class ColorGradingLut
 {
 public:
+	const int k_Lut2DSize = 32;
+	const int k_Lut3DSize = 129;
 	std::unique_ptr<RenderTexture> lut = nullptr;
 	UploadBuffer cbuffer;
 	DescriptorHeap heap;
+	ColorGradingLut(ID3D12Device* device)
+	{
+		heap.Create(
+			device,
+			D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+			1,
+			true);
+		cbuffer.Create(
+			device, 1,
+			true, sizeof(ColorGradingCBuffer));
+	}
 	void operator()(
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* cmdList)

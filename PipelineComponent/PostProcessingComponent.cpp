@@ -156,7 +156,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 	taaComponent->prePareComp = prepareComp;
 	taaComponent->device = device;
 	taaComponent->toRTContainer = renderTextureContainer.get();
-	lutComponent = std::unique_ptr<ColorGradingLut>(new ColorGradingLut());
+	lutComponent = std::unique_ptr<ColorGradingLut>(new ColorGradingLut(device));
 /*	testTex = new Texture(
 		device,
 		"Test",
