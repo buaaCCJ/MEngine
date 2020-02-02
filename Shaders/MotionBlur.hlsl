@@ -14,13 +14,13 @@ cbuffer Params : register(b0)
     float4 _NeighborMaxTex_TexelSize;
     float4 _VelocityTex_TexelSize;
     float4 _MainTex_TexelSize;
-    float4 _TileMaxOffs;
     float2 _ScreenParams;
     float _VelocityScale;
     float _MaxBlurRadius;
     float _RcpMaxBlurRadius;
     float _TileMaxLoop;
     float _LoopCount;
+    float _TileMaxOffs;
 };
 
 struct appdata
@@ -100,7 +100,7 @@ struct appdata
         // TileMax filter (variable width)
         float4 FragTileMaxV(v2f i) : SV_Target
         {
-            float2 uv0 = i.texcoord + _MainTex_TexelSize.xy * _TileMaxOffs.xy;
+            float2 uv0 = i.texcoord + _MainTex_TexelSize.xy * _TileMaxOffs;
 
             float2 du = float2(_MainTex_TexelSize.x, 0.0);
             float2 dv = float2(0.0, _MainTex_TexelSize.y);

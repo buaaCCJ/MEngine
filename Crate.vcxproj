@@ -127,6 +127,7 @@
     <ClInclude Include="PipelineComponent\PostProcessingComponent.h" />
     <ClInclude Include="PipelineComponent\PostProcess\ColorGradingLut.h" />
     <ClInclude Include="PipelineComponent\PostProcess\LensDistortion.h" />
+    <ClInclude Include="PipelineComponent\PostProcess\MotionBlur.h" />
     <ClInclude Include="PipelineComponent\PrepareComponent.h" />
     <ClInclude Include="PipelineComponent\RenderPipeline.h" />
     <ClInclude Include="PipelineComponent\SkyboxComponent.h" />

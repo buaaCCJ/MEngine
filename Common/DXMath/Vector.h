@@ -33,7 +33,6 @@ namespace Math
 		INLINE  Vector3(const Vector4& v);
 		INLINE  Vector3(const FXMVECTOR& vec) : m_vec( vec){}
 
-
 		INLINE operator XMVECTOR() const { return m_vec; }
 
 		INLINE Scalar GetX() const { return Scalar(XMVectorSplatX(m_vec)); }
@@ -90,6 +89,7 @@ namespace Math
 		INLINE Vector4(const Scalar& s) : m_vec(s){ }
 		INLINE  Vector4(const Vector3& xyz) : m_vec (SetWToOne(xyz) ){ }
 		INLINE  Vector4(const FXMVECTOR& vec) : m_vec(vec) {}
+		INLINE Vector4(const XMFLOAT4& flt) : m_vec(XMLoadFloat4(&flt)) {}
 
 		INLINE operator XMVECTOR() const { return m_vec; }
 

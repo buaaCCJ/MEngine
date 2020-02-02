@@ -10,6 +10,7 @@
 #include "../RenderComponent/Texture.h"
 #include "PostProcess/ColorGradingLut.h"
 #include "PostProcess//LensDistortion.h"
+#include "PostProcess/MotionBlur.h"
 #include "RenderPipeline.h"
 //#include "SkyboxComponent.h"
 Shader* postShader;
@@ -17,6 +18,7 @@ std::unique_ptr<PSOContainer> backBufferContainer;
 int _Lut3D;
 //std::unique_ptr<TemporalAA> taaComponent;
 std::unique_ptr<ColorGradingLut> lutComponent;
+std::unique_ptr<MotionBlur> motionBlurComponent;
 //ObjectPtr<Texture> testTex;
 //PrepareComponent* prepareComp = nullptr;
 struct PostParams
@@ -155,6 +157,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 	Params = ShaderID::PropertyToID("Params");
 	SetCPUDepending<PrepareComponent>();
 	//	SetGPUDepending<SkyboxComponent>();
+	tempRT.reserve(20);
 	tempRT.resize(4);
 	tempRT[0].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[0].uID = ShaderID::PropertyToID("_CameraRenderTarget");
@@ -165,7 +168,8 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 	tempRT[3].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[3].uID = ShaderID::PropertyToID("_CameraDepthTexture");
 
-
+	motionBlurComponent = std::unique_ptr<MotionBlur>(new MotionBlur());
+	motionBlurComponent->Init(tempRT);
 	postShader = ShaderCompiler::GetShader("PostProcess");
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	backBufferContainer = std::unique_ptr<PSOContainer>(
@@ -191,6 +195,7 @@ std::vector<TemporalResourceCommand>& PostProcessingComponent::SendRenderTexture
 	auto& desc = tempRT[2].descriptor;
 	desc.rtDesc.width = evt.width;
 	desc.rtDesc.height = evt.height;
+	motionBlurComponent->UpdateTempRT(tempRT, evt);
 	return tempRT;
 }
 

@@ -430,6 +430,9 @@
     <ClInclude Include="PipelineComponent\PostProcess\ColorGradingLut.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PipelineComponent\PostProcess\MotionBlur.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="TODOList.txt" />
