@@ -7,6 +7,7 @@
 #include "../RenderComponent/ComputeShader.h"
 #include "../Singleton/ShaderCompiler.h"
 #include "../Singleton/ShaderID.h"
+#include "RenderPipeline.h"
 using namespace DirectX;
 
 #define XRES 32

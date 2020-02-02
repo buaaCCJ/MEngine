@@ -11,6 +11,7 @@
 #include "LightingComponent.h"
 #include "DepthComponent.h"
 #include "../Singleton/PSOContainer.h"
+#include "TemporalAntiAlias.h"
 //ThreadCommand* threadCommand;
 RenderPipeline* RenderPipeline::current(nullptr);
 std::unordered_map<std::string, PipelineComponent*> RenderPipeline::componentsLink;
@@ -50,6 +51,7 @@ RenderPipeline::RenderPipeline(ID3D12Device* device, ID3D12GraphicsCommandList* 
 	Init<DepthComponent>();
 	Init<SkyboxComponent>();
 	Init<GBufferComponent>();
+	Init<TemporalAntiAlias>();
 	Init<PostProcessingComponent>();
 
 	for (UINT i = 0, size = components.size(); i < size; ++i)

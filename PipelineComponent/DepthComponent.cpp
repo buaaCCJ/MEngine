@@ -6,6 +6,7 @@
 #include "../LogicComponent/World.h"
 #include "PrepareComponent.h"
 #include "../Singleton/PSOContainer.h"
+#include "RenderPipeline.h"
 using namespace DirectX;
 PrepareComponent* prepareComp = nullptr;
 PSOContainer* depthPrepassContainer(nullptr);

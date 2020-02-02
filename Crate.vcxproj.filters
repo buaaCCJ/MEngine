@@ -185,6 +185,9 @@
     <ClCompile Include="Singleton\ColorUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PipelineComponent\TemporalAntiAlias.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Singleton\FrameResource.h">
@@ -325,9 +328,6 @@
     <ClInclude Include="PipelineComponent\SkyboxComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PipelineComponent\TemporalAA.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PipelineComponent\TempRTAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -419,6 +419,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\DXMath\Vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineComponent\TemporalAntiAlias.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineComponent\PostProcess\LensDistortion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineComponent\PostProcess\ColorGradingLut.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

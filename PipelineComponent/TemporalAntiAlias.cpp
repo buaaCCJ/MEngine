@@ -1,4 +1,4 @@
-#pragma once
+#include "TemporalAntiAlias.h"
 #include "../Singleton/PSOContainer.h"
 #include "../Singleton/ShaderID.h"
 #include "../Singleton/ShaderCompiler.h"
@@ -9,6 +9,7 @@
 #include "../Singleton/FrameResource.h"
 #include "../RenderComponent/RenderTexture.h"
 #include "PrepareComponent.h"
+#include "RenderPipeline.h"
 using namespace DirectX;		//Only for single .cpp, namespace allowed
 struct TAAConstBuffer
 {
@@ -27,11 +28,14 @@ struct TAAConstBuffer
 
 };
 
+
+std::unique_ptr<PSOContainer> renderTextureContainer;
+
 struct TAAFrameData : public IPipelineResource
 {
 	UploadBuffer taaBuffer;
 	DescriptorHeap srvHeap;
-	TAAFrameData(ID3D12Device* device) : 
+	TAAFrameData(ID3D12Device* device) :
 		taaBuffer(device, 1, true, sizeof(TAAConstBuffer)),
 		srvHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 6, true)
 	{
@@ -133,7 +137,7 @@ public:
 			constBufferData._InvNonJitterVP = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(camTransData->nonJitteredVPMatrix), camTransData->nonJitteredVPMatrix);
 			constBufferData._InvLastVp = *(XMFLOAT4X4*)&XMMatrixInverse(&XMMatrixDeterminant(camTransData->lastNonJitterVP), camTransData->lastNonJitterVP);
 			constBufferData._FinalBlendParameters = { 0.95f,0.85f, 6000.0f, 0 };		//Stationary Move, Const, 0
-			constBufferData._CameraDepthTexture_TexelSize = { 1.0f / width, 1.0f / height, (float)width, (float) height };
+			constBufferData._CameraDepthTexture_TexelSize = { 1.0f / width, 1.0f / height, (float)width, (float)height };
 			constBufferData._ScreenParams = { (float)width, (float)height, 1.0f / width + 1, 1.0f / height + 1 };
 			constBufferData._ZBufferParams = prePareComp->_ZBufferParams;
 			constBufferData._TemporalClipBounding = { 3.0f, 1.25f, 3000.0f };
@@ -146,10 +150,10 @@ public:
 			taaShader->SetResource(commandList, TAAConstBuffer_Index, &tempFrameData->taaBuffer, 0);
 			taaShader->SetResource(commandList, ShaderID::GetMainTex(), &tempFrameData->srvHeap, 0);
 			Graphics::Blit(
-				commandList, 
+				commandList,
 				device,
-				&renderTargetTex->GetColorDescriptor(0),1,
-				nullptr, 
+				&renderTargetTex->GetColorDescriptor(0), 1,
+				nullptr,
 				toRTContainer,
 				width, height,
 				taaShader, 0
@@ -160,3 +164,84 @@ public:
 		Graphics::CopyTexture(commandList, inputDepthBuffer, CopyTarget_DepthBuffer, 0, 0, tempCamData->lastDepthTexture.get(), CopyTarget_ColorBuffer, 0, 0);
 	}
 };
+
+
+Storage<TemporalAA, 1> taaStorage;
+std::vector<TemporalResourceCommand>& TemporalAntiAlias::SendRenderTextureRequire(EventData& evt)
+{
+	for (uint i = 0; i < tempRT.size(); ++i)
+	{
+		auto& a = tempRT[i].descriptor.rtDesc;
+		a.width = evt.width;
+		a.height = evt.height;
+	}
+	return tempRT;
+}
+
+void TemporalAntiAlias::RenderEvent(EventData& data, ThreadCommand* commandList)
+{
+	RenderTexture* sourceTex;
+	RenderTexture* destTex;
+	RenderTexture* depthTex;
+	RenderTexture* motionVector;
+	sourceTex = (RenderTexture*)allTempResource[0];
+	destTex = (RenderTexture*)allTempResource[1];
+	depthTex = (RenderTexture*)allTempResource[2];
+	motionVector = (RenderTexture*)allTempResource[3];
+	FrameResource* res = data.resource;
+	Camera* cam = data.camera;
+	uint width = data.width;
+	uint height = data.height;
+	ScheduleJob([=]()->void
+	{
+		TemporalAA* ptr = (TemporalAA*)&taaStorage;
+		commandList->ResetCommand();
+		ptr->Run(
+			sourceTex,
+			depthTex,
+			motionVector,
+			destTex,
+			commandList->GetCmdList(),
+			res,
+			cam,
+			width,
+			height);
+		commandList->CloseCommand();
+	});
+}
+
+void TemporalAntiAlias::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+{
+	SetCPUDepending<PrepareComponent>();
+	tempRT.resize(4);
+	tempRT[0].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
+	tempRT[0].uID = ShaderID::PropertyToID("_CameraRenderTarget");
+	tempRT[1].type = TemporalResourceCommand::CommandType_Create_RenderTexture;
+	tempRT[1].uID = ShaderID::PropertyToID("_PostProcessBlitTarget");
+	tempRT[2].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
+	tempRT[2].uID = ShaderID::PropertyToID("_CameraDepthTexture");
+	tempRT[3].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
+	tempRT[3].uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
+	auto& desc = tempRT[1].descriptor;
+	desc.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	desc.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
+	desc.rtDesc.depthSlice = 1;
+	desc.rtDesc.width = 0;
+	desc.rtDesc.height = 0;
+	desc.rtDesc.type = RenderTextureDimension_Tex2D;
+	renderTextureContainer = std::unique_ptr<PSOContainer>(
+		new PSOContainer(DXGI_FORMAT_UNKNOWN, 1, &desc.rtDesc.rtFormat.colorFormat)
+		);
+	TemporalAA* ptr = (TemporalAA*)&taaStorage;
+	ptr->prePareComp = RenderPipeline::GetComponent<PrepareComponent>();
+	ptr->device = device;
+	ptr->toRTContainer = renderTextureContainer.get();
+	new (ptr)TemporalAA();
+}
+
+void TemporalAntiAlias::Dispose()
+{
+	TemporalAA* ptr = (TemporalAA*)&taaStorage;
+	ptr->~TemporalAA();
+	renderTextureContainer = nullptr;
+}

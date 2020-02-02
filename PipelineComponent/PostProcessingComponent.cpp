@@ -5,25 +5,40 @@
 #include "../Singleton/Graphics.h"
 #include "../LogicComponent/World.h"
 #include "../RenderComponent/DescriptorHeap.h"
-#include "TemporalAA.h"
+#include "PrepareComponent.h"
+//#include "TemporalAA.h"
 #include "../RenderComponent/Texture.h"
-#include "ColorGradingLut.h"
+#include "PostProcess/ColorGradingLut.h"
+#include "PostProcess//LensDistortion.h"
+#include "RenderPipeline.h"
 //#include "SkyboxComponent.h"
 Shader* postShader;
 std::unique_ptr<PSOContainer> backBufferContainer;
-std::unique_ptr<PSOContainer> renderTextureContainer;
-std::unique_ptr<TemporalAA> taaComponent;
+int _Lut3D;
+//std::unique_ptr<TemporalAA> taaComponent;
 std::unique_ptr<ColorGradingLut> lutComponent;
 //ObjectPtr<Texture> testTex;
 //PrepareComponent* prepareComp = nullptr;
+struct PostParams
+{
+	float4 _Lut3DParam;
+	float4 _Distortion_Amount;
+	float4 _Distortion_CenterScale;
+	float4 _MainTex_TexelSize;
+	float _ChromaticAberration_Amount;
+};
 class PostFrameData : public IPipelineResource
 {
 public:
 	DescriptorHeap postSRVHeap;
-	PostFrameData(ID3D12Device* device) : postSRVHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, true)
+	UploadBuffer postUBuffer;
+	PostFrameData(ID3D12Device* device)
+		: postSRVHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true),
+		postUBuffer(device, 1, true, sizeof(PostParams))
 	{
 	}
 };
+uint Params = 0;
 class PostRunnable
 {
 public:
@@ -44,16 +59,16 @@ public:
 	void operator()()
 	{
 		threadCmd->ResetCommand();
-		
+
 		ID3D12GraphicsCommandList* commandList = threadCmd->GetCmdList();
-//		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ, motionVector->GetColorResource());
+		//		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ, motionVector->GetColorResource());
 		PostFrameData* frameRes = (PostFrameData*)resource->GetPerCameraResource(selfPtr, cam,
 			[=]()->PostFrameData*
 		{
 			return new PostFrameData(device);
 		});
 
-		taaComponent->Run(
+		/*taaComponent->Run(
 			renderTarget,
 			depthTarget,
 			motionVector,
@@ -62,22 +77,36 @@ public:
 			resource,
 			cam,
 			width, height
-		);
+		);*/
 		(*lutComponent)(
 			device,
 			commandList);
+		lutComponent->lut->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 1, device);
 		destMap->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 0, device);
-
 		if (isForPresent)
 		{
 			Graphics::ResourceStateTransform(
-				commandList, 
+				commandList,
 				D3D12_RESOURCE_STATE_PRESENT,
-				D3D12_RESOURCE_STATE_RENDER_TARGET, 
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
 				backBuffer);
 		}
 		postShader->BindRootSignature(commandList, &frameRes->postSRVHeap);
+		PostParams& params = *(PostParams*)frameRes->postUBuffer.GetMappedDataPtr(0);
+		params._Lut3DParam = { 1.0f / lutComponent->k_Lut3DSize, lutComponent->k_Lut3DSize - 1.0f, 1, 1 };
+		params._MainTex_TexelSize = {
+			1.0f / width,
+			1.0f/ height,
+			(float)width,
+			(float)height
+		};
+		GetLensDistortion(
+			params._Distortion_CenterScale,
+			params._Distortion_Amount,
+			params._ChromaticAberration_Amount);
 		postShader->SetResource(commandList, ShaderID::GetMainTex(), &frameRes->postSRVHeap, 0);
+		postShader->SetResource(commandList, _Lut3D, &frameRes->postSRVHeap, 1);
+		postShader->SetResource(commandList, Params, &frameRes->postUBuffer, 0);
 		Graphics::Blit(
 			commandList,
 			device,
@@ -92,11 +121,11 @@ public:
 		if (isForPresent) {
 			Graphics::ResourceStateTransform(
 				commandList,
-				D3D12_RESOURCE_STATE_RENDER_TARGET, 
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
 				D3D12_RESOURCE_STATE_PRESENT,
 				backBuffer);
 		}
-	//	Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET, motionVector->GetColorResource());
+		//	Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET, motionVector->GetColorResource());
 		threadCmd->CloseCommand();
 	}
 };
@@ -122,48 +151,42 @@ void PostProcessingComponent::RenderEvent(EventData& data, ThreadCommand* comman
 }
 void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
+	_Lut3D = ShaderID::PropertyToID("_Lut3D");
+	Params = ShaderID::PropertyToID("Params");
 	SetCPUDepending<PrepareComponent>();
-//	SetGPUDepending<SkyboxComponent>();
+	//	SetGPUDepending<SkyboxComponent>();
 	tempRT.resize(4);
 	tempRT[0].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[0].uID = ShaderID::PropertyToID("_CameraRenderTarget");
 	tempRT[1].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[1].uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
-	tempRT[2].type = TemporalResourceCommand::CommandType_Create_RenderTexture;
+	tempRT[2].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[2].uID = ShaderID::PropertyToID("_PostProcessBlitTarget");
 	tempRT[3].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[3].uID = ShaderID::PropertyToID("_CameraDepthTexture");
-	auto& desc = tempRT[2].descriptor;
-	desc.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	desc.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
-	desc.rtDesc.depthSlice = 1;
-	desc.rtDesc.width = 0;
-	desc.rtDesc.height = 0;
-	desc.rtDesc.type = RenderTextureDimension_Tex2D;
-	
+
+
 	postShader = ShaderCompiler::GetShader("PostProcess");
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	backBufferContainer = std::unique_ptr<PSOContainer>(
 		new PSOContainer(DXGI_FORMAT_UNKNOWN, 1, &backBufferFormat)
 		);
-	DXGI_FORMAT rtFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	renderTextureContainer = std::unique_ptr<PSOContainer>(
-		new PSOContainer(DXGI_FORMAT_UNKNOWN, 1, &rtFormat)
-		);
-	taaComponent = std::unique_ptr<TemporalAA>(new TemporalAA());
+
 	prepareComp = RenderPipeline::GetComponent<PrepareComponent>();
+	/*
+	taaComponent = std::unique_ptr<TemporalAA>(new TemporalAA());
 	taaComponent->prePareComp = prepareComp;
 	taaComponent->device = device;
-	taaComponent->toRTContainer = renderTextureContainer.get();
+	taaComponent->toRTContainer = renderTextureContainer.get();*/
 	lutComponent = std::unique_ptr<ColorGradingLut>(new ColorGradingLut(device));
-/*	testTex = new Texture(
-		device,
-		"Test",
-		L"Resource/Test.vtex"
-	);*/
+	/*	testTex = new Texture(
+			device,
+			"Test",
+			L"Resource/Test.vtex"
+		);*/
 }
 
- std::vector<TemporalResourceCommand>& PostProcessingComponent::SendRenderTextureRequire(EventData& evt)
+std::vector<TemporalResourceCommand>& PostProcessingComponent::SendRenderTextureRequire(EventData& evt)
 {
 	auto& desc = tempRT[2].descriptor;
 	desc.rtDesc.width = evt.width;
@@ -174,7 +197,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 void PostProcessingComponent::Dispose()
 {
 	backBufferContainer = nullptr;
-	taaComponent = nullptr;
+	//taaComponent = nullptr;
 	lutComponent = nullptr;
 	//testTex.Destroy();
 }

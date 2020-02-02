@@ -65,15 +65,87 @@ void GetPostProcessShader(ID3D12Device* device, JobBucket* bucket)
 	p.rasterizeState = cullDesc;
 	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	p.depthStencilState = dsDesc;
-	const UINT SHADER_VAR_COUNT = 1;
+	const UINT SHADER_VAR_COUNT = 3;
 	//Properties
 
 	ShaderVariable var[SHADER_VAR_COUNT] =
 	{
-		Texture2D::GetShaderVar(1, 0, 0, "_MainTex")
+		Texture2D::GetShaderVar(1, 0, 0, "_MainTex"),
+		Texture2D::GetShaderVar(1, 1, 0, "_Lut3D"),
+		ConstantBuffer::GetShaderVar(0, 0, "Params")
 	};
 	Shader* opaqueShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
 	ShaderCompiler::AddShader("PostProcess", opaqueShader);
+}
+
+void GetMotionBlurShader(ID3D12Device* device, JobBucket* bucket)
+{
+	//ZWrite
+	D3D12_DEPTH_STENCIL_DESC dsDesc;
+	dsDesc.DepthEnable = FALSE;
+	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	dsDesc.StencilEnable = FALSE;
+	dsDesc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	dsDesc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
+	{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+	dsDesc.FrontFace = defaultStencilOp;
+	dsDesc.BackFace = defaultStencilOp;
+	//Cull
+	D3D12_RASTERIZER_DESC cullDesc;
+	cullDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	cullDesc.CullMode = D3D12_CULL_MODE_NONE;
+	cullDesc.FrontCounterClockwise = FALSE;
+	cullDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+	cullDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+	cullDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+	cullDesc.DepthClipEnable = FALSE;
+	cullDesc.MultisampleEnable = FALSE;
+	cullDesc.AntialiasedLineEnable = FALSE;
+	cullDesc.ForcedSampleCount = 0;
+	cullDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+	const UINT PASS_COUNT = 6;
+	Pass allPasses[PASS_COUNT];
+	Pass p;
+	p.fragment = "FragVelocitySetup";
+	p.vertex = "vert";
+	p.filePath = L"Shaders\\MotionBlur.hlsl";
+	p.name = "FragVelocitySetup";
+	p.rasterizeState = cullDesc;
+	p.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	p.depthStencilState = dsDesc;
+	allPasses[0] = p;
+	p.fragment = "FragTileMax1";
+	p.name = "FragTileMax1";
+	allPasses[1] = p;
+	p.fragment = "FragTileMax2";
+	p.name = "FragTileMax2";
+	allPasses[2] = p;
+	p.fragment = "FragTileMaxV";
+	p.name = "FragTileMaxV";
+	allPasses[3] = p;
+	p.fragment = "FragNeighborMax";
+	p.name = "FragNeighborMax";
+	allPasses[4] = p;
+	p.fragment = "FragReconstruction";
+	p.name = "FragReconstruction";
+	allPasses[5] = p;
+	//allPasses[1] = 
+	const UINT SHADER_VAR_COUNT = 6;
+	//Properties
+
+	ShaderVariable var[SHADER_VAR_COUNT] =
+	{
+		Texture2D::GetShaderVar(1, 0, 0, "_MainTex"),
+		Texture2D::GetShaderVar(1, 1, 0, "_CameraDepthTexture"),
+		Texture2D::GetShaderVar(1, 2, 0, "_CameraMotionVectorsTexture"),
+		Texture2D::GetShaderVar(1, 3, 0, "_NeighborMaxTex"),
+		Texture2D::GetShaderVar(1, 4, 0, "_VelocityTex"),
+		ConstantBuffer::GetShaderVar(0, 0, "Params")
+	};
+	Shader* opaqueShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
+	ShaderCompiler::AddShader("MotionBlur", opaqueShader);
 }
 
 void GetOpaqueStandardShader(ID3D12Device* device, JobBucket* bucket)
@@ -334,6 +406,7 @@ void ShaderCompiler::Init(ID3D12Device* device, JobSystem* jobSys)
 	GetTemporalAAShader(device, bucket);
 	GetTonemapLut3DShader(device, bucket);
 	GetPreintShader(device, bucket);
+	GetMotionBlurShader(device, bucket);
 	GetClusterBasedLightCullingShader(device, bucket);
 #ifdef SHADER_MULTICORE_COMPILE
 	jobSys->ExecuteBucket(bucket, 1);

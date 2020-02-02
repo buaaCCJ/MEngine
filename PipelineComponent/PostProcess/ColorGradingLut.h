@@ -94,12 +94,12 @@ public:
 		cb._ChannelMixerRed = channelMixerR / 100.0f;
 		cb._ChannelMixerGreen = channelMixerG / 100.0f;
 		cb._ChannelMixerBlue = channelMixerB / 100.0f;
-		Vector4 lift = ColorUtility::ColorToLift(lift * 0.2f);
-		Vector4 gain = ColorUtility::ColorToGain(gain * 0.8f);
+		Vector4 liftVec = ColorUtility::ColorToLift(lift * 0.2f);
+		Vector4 gainVec = ColorUtility::ColorToGain(gain * 0.8f);
 		Vector4 invgamma = ColorUtility::ColorToInverseGamma(gamma * 0.8f);
 		cb._InvGamma = invgamma;
-		cb._Lift = lift;
-		cb._Gain = gain;
+		cb._Lift = liftVec;
+		cb._Gain = gainVec;
 		uint groupSize = k_Lut3DSize / 4;
 		lut->BindUAVToHeap(&heap, 0, device, 0);
 		lutBakeShader->BindRootSignature(cmdList, &heap);

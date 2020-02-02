@@ -44,9 +44,10 @@ float3 LinearGrade(float3 colorLinear)
 {
     colorLinear = WhiteBalance(colorLinear, _ColorBalance.rgb);
     colorLinear *= _ColorFilter.rgb;
+    
     colorLinear = ChannelMixer(colorLinear, _ChannelMixerRed.rgb, _ChannelMixerGreen.rgb, _ChannelMixerBlue.rgb);
+   
     colorLinear = LiftGammaGainHDR(colorLinear, _Lift.rgb, _InvGamma.rgb, _Gain.rgb);
-
     // Do NOT feed negative values to RgbToHsv or they'll wrap around
     colorLinear = max(0.0, colorLinear);
 
@@ -80,16 +81,18 @@ float3 ColorGrade(float3 colorLutSpace)
 {
     float3 colorLinear = LUT_SPACE_DECODE(colorLutSpace);
     float3 aces = unity_to_ACES(colorLinear);
-
+    
     // ACEScc (log) space
     float3 acescc = ACES_to_ACEScc(aces);
+   
     acescc = LogGrade(acescc);
+     
     aces = ACEScc_to_ACES(acescc);
-
+    
     // ACEScg (linear) space
     float3 acescg = ACES_to_ACEScg(aces);
+    
     acescg = LinearGrade(acescg);
-
     // Tonemap ODT(RRT(aces))
     aces = ACEScg_to_ACES(acescg);
     colorLinear = AcesTonemap(aces);

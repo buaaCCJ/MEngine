@@ -175,6 +175,24 @@ float2 TransformTriangleVertexToUV(float2 vertex)
     return uv;
 }
 
+// Interleaved gradient function from Jimenez 2014
+// http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+float GradientNoise(float2 uv, float2 _ScreenParams)
+{
+    uv = floor(uv * _ScreenParams.xy);
+    float f = dot(float2(0.06711056, 0.00583715), uv);
+    return frac(52.9829189 * frac(f));
+}
+inline float Linear01Depth( float z , float4 _ZBufferParams)
+{
+    return 1.0 / (_ZBufferParams.x * z + _ZBufferParams.y);
+}
+// Z buffer to linear depth
+inline float LinearEyeDepth( float z  , float4 _ZBufferParams)
+{
+    return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+}
+
 
 #define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)
 
