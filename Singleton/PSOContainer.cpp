@@ -1,11 +1,19 @@
 #include "PSOContainer.h"
 #include "MeshLayout.h"
 PSOContainer::PSOContainer(DXGI_FORMAT depthFormat, UINT rtCount, DXGI_FORMAT* allRTFormat):
-	depthFormat(depthFormat),
-	rtCount(rtCount)
+	settings(1)
 {
-	memcpy(rtFormat, allRTFormat, sizeof(DXGI_FORMAT) * rtCount);
-	allPSOState.reserve(200);
+	PSORTSetting& set = settings[0];
+	set.depthFormat = depthFormat;
+	set.rtCount = rtCount;
+	memcpy(set.rtFormat, allRTFormat, sizeof(DXGI_FORMAT) * rtCount);
+	allPSOState.reserve(50);
+}
+PSOContainer::PSOContainer(PSORTSetting* formats, uint formatCount) : 
+	settings(formatCount)
+{
+	memcpy(settings.data(), formats, sizeof(PSORTSetting) * formatCount);
+	allPSOState.reserve(50);
 }
 bool PSODescriptor::operator==(const PSODescriptor& other) const
 {
@@ -16,10 +24,11 @@ bool PSODescriptor::operator==(const PSODescriptor&& other) const
 {
 	return other.shaderPtr == shaderPtr && other.shaderPass == shaderPass && other.meshLayoutIndex == meshLayoutIndex;
 }
-ID3D12PipelineState* PSOContainer::GetState(PSODescriptor& desc, ID3D12Device* device)
+ID3D12PipelineState* PSOContainer::GetState(PSODescriptor& desc, ID3D12Device* device, uint index)
 {
 	desc.GenerateHash();
-	auto&& ite = allPSOState.find(desc);
+	PSORTSetting& set = settings[index];
+	auto&& ite = allPSOState.find(std::pair<uint, PSODescriptor>(index, desc));
 	if (ite == allPSOState.end())
 	{
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
@@ -29,14 +38,14 @@ ID3D12PipelineState* PSOContainer::GetState(PSODescriptor& desc, ID3D12Device* d
 		desc.shaderPtr->GetPassPSODesc(desc.shaderPass, &opaquePsoDesc);
 		opaquePsoDesc.SampleMask = UINT_MAX;
 		opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		opaquePsoDesc.NumRenderTargets = rtCount;
-		memcpy(&opaquePsoDesc.RTVFormats, rtFormat, rtCount * sizeof(DXGI_FORMAT));
+		opaquePsoDesc.NumRenderTargets = set.rtCount;
+		memcpy(&opaquePsoDesc.RTVFormats, set.rtFormat, set.rtCount * sizeof(DXGI_FORMAT));
 		opaquePsoDesc.SampleDesc.Count = 1;
 		opaquePsoDesc.SampleDesc.Quality = 0;
-		opaquePsoDesc.DSVFormat = depthFormat;
+		opaquePsoDesc.DSVFormat = set.depthFormat;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> result = nullptr;
 		ThrowIfFailed(device->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(result.GetAddressOf())));
-		allPSOState.insert_or_assign(desc, result);
+		allPSOState.insert_or_assign(std::pair<uint, PSODescriptor>(index, desc), result);
 		return result.Get();
 	};
 	return ite->second.Get();

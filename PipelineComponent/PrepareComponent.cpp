@@ -121,8 +121,12 @@ struct PrepareRunnable
 		);
 		ths->_ZBufferParams.x = (float)(1.0 - (camera->GetFarZ() / camera->GetNearZ()));
 		ths->_ZBufferParams.y = (float)(camera->GetFarZ() / camera->GetNearZ());
+		ths->_ZBufferParams.y += ths->_ZBufferParams.x;
+		ths->_ZBufferParams.x *= -1;
 		ths->_ZBufferParams.z = ths->_ZBufferParams.x / camera->GetFarZ();
 		ths->_ZBufferParams.w = ths->_ZBufferParams.y / camera->GetFarZ();
+		ths->_ZBufferParams.w += ths->_ZBufferParams.z;
+		ths->_ZBufferParams.z *= -1;
 		camera->UploadCameraBuffer(ths->passConstants);
 		//Calculate Jitter Matrix
 		XMMATRIX nonJitterVP = transData->nonJitteredVPMatrix;

@@ -92,6 +92,7 @@ private:
 	UINT mHeight = 0;
 	UINT mipCount;
 	RenderTextureUsage usage;
+	D3D12_RESOURCE_STATES initState;
 	DXGI_FORMAT mFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Microsoft::WRL::ComPtr<ID3D12Resource> mColorResource;
 	DescriptorHeap rtvHeap;
@@ -111,6 +112,11 @@ public:
 		UINT mipCount,
 		RenderTextureState initState = RenderTextureState::Render_Target
 	);
+	D3D12_RESOURCE_STATES GetInitState() const
+	{
+		return initState;
+	}
+	RenderTextureUsage GetUsage() const { return usage; }
 	constexpr UINT GetMipCount() { return mipCount; }
 	void BindRTVToHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device, UINT slice);
 	constexpr UINT GetWidth() { return mWidth; }

@@ -103,11 +103,12 @@ public:
 		RenderTexture* inputDepthBuffer,
 		RenderTexture* motionVector,
 		RenderTexture* renderTargetTex,
-		ID3D12GraphicsCommandList* commandList,
+		ThreadCommand* tCmd,
 		FrameResource* res,
 		Camera* cam,
 		UINT width, UINT height)
 	{
+		auto commandList = tCmd->GetCmdList();
 		CameraTransformData* camTransData = (CameraTransformData*)cam->GetResource(prePareComp, [&]()->CameraTransformData*
 		{
 			return new CameraTransformData;
@@ -145,19 +146,25 @@ public:
 			constBufferData._Jitter = camTransData->jitter;
 			constBufferData._LastJitter = camTransData->lastFrameJitter;
 			tempFrameData->taaBuffer.CopyData(0, &constBufferData);
-
+			
 			taaShader->BindRootSignature(commandList, &tempFrameData->srvHeap);
 			taaShader->SetResource(commandList, TAAConstBuffer_Index, &tempFrameData->taaBuffer, 0);
 			taaShader->SetResource(commandList, ShaderID::GetMainTex(), &tempFrameData->srvHeap, 0);
+			tCmd->SetResourceReadWriteState(inputColorBuffer, ResourceReadWriteState::Read);
+			tCmd->SetResourceReadWriteState(inputDepthBuffer, ResourceReadWriteState::Read);
+			tCmd->SetResourceReadWriteState(motionVector, ResourceReadWriteState::Read);
 			Graphics::Blit(
 				commandList,
 				device,
 				&renderTargetTex->GetColorDescriptor(0), 1,
 				nullptr,
-				toRTContainer,
+				toRTContainer,0,
 				width, height,
 				taaShader, 0
 			);
+			tCmd->SetResourceReadWriteState(inputColorBuffer, ResourceReadWriteState::Write);
+			tCmd->SetResourceReadWriteState(inputDepthBuffer, ResourceReadWriteState::Write);
+			tCmd->SetResourceReadWriteState(motionVector, ResourceReadWriteState::Write);
 		}
 		Graphics::CopyTexture(commandList, renderTargetTex, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastRenderTarget.get(), CopyTarget_ColorBuffer, 0, 0);
 		Graphics::CopyTexture(commandList, motionVector, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastMotionVectorTexture.get(), CopyTarget_ColorBuffer, 0, 0);
@@ -201,7 +208,7 @@ void TemporalAntiAlias::RenderEvent(EventData& data, ThreadCommand* commandList)
 			depthTex,
 			motionVector,
 			destTex,
-			commandList->GetCmdList(),
+			commandList,
 			res,
 			cam,
 			width,

@@ -43,7 +43,7 @@ void MeshRenderer::Draw(
 	desc.meshLayoutIndex = mesh->GetLayoutIndex();
 	desc.shaderPass = targetPass;
 	desc.shaderPtr = mShader;
-	ID3D12PipelineState* pso = container->GetState(desc, device);
+	ID3D12PipelineState* pso = container->GetState(desc, device, 0);
 	commandList->SetPipelineState(pso);
 	mShader->BindRootSignature(commandList);
 	mShader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), cameraBuffer->buffer, cameraBuffer->element);

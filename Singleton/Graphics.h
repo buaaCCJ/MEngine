@@ -26,14 +26,22 @@ public:
 		D3D12_CPU_DESCRIPTOR_HANDLE* renderTarget,
 		UINT renderTargetCount,
 		D3D12_CPU_DESCRIPTOR_HANDLE* depthTarget,
-		PSOContainer* container,
+		PSOContainer* container, uint containerIndex,
 		UINT width, UINT height,
 		Shader* shader, UINT pass);
-	static void ResourceStateTransform(
+
+	inline static void ResourceStateTransform(
 		ID3D12GraphicsCommandList* commandList,
 		D3D12_RESOURCE_STATES beforeState,
 		D3D12_RESOURCE_STATES afterState,
-		ID3D12Resource* resource);
+		ID3D12Resource* resource)
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			resource,
+			beforeState,
+			afterState
+		));
+	}
 
 	static void CopyTexture(
 		ID3D12GraphicsCommandList* commandList,

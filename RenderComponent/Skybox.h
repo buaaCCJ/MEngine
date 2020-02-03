@@ -28,6 +28,6 @@ public:
 		ID3D12Device* device,
 		ConstBufferElement* cameraBuffer,
 		FrameResource* currentResource,
-		PSOContainer* container
+		PSOContainer* container, uint containerIndex
 	);
 };

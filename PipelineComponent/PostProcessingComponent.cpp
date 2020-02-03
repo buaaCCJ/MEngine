@@ -34,6 +34,7 @@ class PostFrameData : public IPipelineResource
 public:
 	DescriptorHeap postSRVHeap;
 	UploadBuffer postUBuffer;
+	RenderTexture* texs[20];
 	PostFrameData(ID3D12Device* device)
 		: postSRVHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2, true),
 		postUBuffer(device, 1, true, sizeof(PostParams))
@@ -58,6 +59,7 @@ public:
 	FrameResource* resource;
 	bool isForPresent;
 	Camera* cam;
+	PrepareComponent* prepareComp;
 	void operator()()
 	{
 		threadCmd->ResetCommand();
@@ -67,24 +69,40 @@ public:
 		PostFrameData* frameRes = (PostFrameData*)resource->GetPerCameraResource(selfPtr, cam,
 			[=]()->PostFrameData*
 		{
-			return new PostFrameData(device);
+			return nullptr;
 		});
 
-		/*taaComponent->Run(
-			renderTarget,
-			depthTarget,
-			motionVector,
-			destMap,
-			commandList,
-			resource,
+		RenderTexture* blitSource = renderTarget;
+		RenderTexture* blitDest = destMap;
+		auto SwitchRenderTarget = [&]()->void
+		{
+			RenderTexture* swaper = blitSource;
+			blitSource = blitDest;
+			blitDest = swaper;
+			threadCmd->SetResourceReadWriteState(blitSource, ResourceReadWriteState::Read);
+			threadCmd->SetResourceReadWriteState(blitDest, ResourceReadWriteState::Write);
+		};
+		SwitchRenderTarget();
+		threadCmd->SetResourceReadWriteState(frameRes->texs[1], ResourceReadWriteState::Read);
+		threadCmd->SetResourceReadWriteState(frameRes->texs[3], ResourceReadWriteState::Read);
+		motionBlurComponent->Execute(
+			device,
+			threadCmd,
 			cam,
-			width, height
-		);*/
+			resource,
+			blitSource,
+			blitDest,
+			frameRes->texs,
+			prepareComp->_ZBufferParams,
+			blitDest->GetWidth(),
+			blitDest->GetHeight(),
+			3, 1);
+		SwitchRenderTarget();
 		(*lutComponent)(
 			device,
 			commandList);
 		lutComponent->lut->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 1, device);
-		destMap->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 0, device);
+		blitSource->BindColorBufferToSRVHeap(&frameRes->postSRVHeap, 0, device);
 		if (isForPresent)
 		{
 			Graphics::ResourceStateTransform(
@@ -115,7 +133,7 @@ public:
 			&backBufferHandle,
 			1,
 			nullptr,
-			backBufferContainer.get(),
+			backBufferContainer.get(), 0,
 			width, height,
 			postShader,
 			0
@@ -134,6 +152,12 @@ public:
 
 void PostProcessingComponent::RenderEvent(EventData& data, ThreadCommand* commandList)
 {
+	PostFrameData* frameRes = (PostFrameData*)data.resource->GetPerCameraResource(this, data.camera,
+		[=]()->PostFrameData*
+	{
+		return new PostFrameData(data.device);
+	});
+	memcpy(frameRes->texs, allTempResource.data(), sizeof(RenderTexture*) * allTempResource.size());
 	JobHandle handle = ScheduleJob<PostRunnable>({
 		(RenderTexture*)allTempResource[0],
 		(RenderTexture*)allTempResource[3],
@@ -148,8 +172,8 @@ void PostProcessingComponent::RenderEvent(EventData& data, ThreadCommand* comman
 		this,
 		data.resource,
 		data.isBackBufferForPresent,
-		data.camera
-		});
+		data.camera,
+		prepareComp });
 }
 void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
@@ -170,6 +194,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 
 	motionBlurComponent = std::unique_ptr<MotionBlur>(new MotionBlur());
 	motionBlurComponent->Init(tempRT);
+	
 	postShader = ShaderCompiler::GetShader("PostProcess");
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	backBufferContainer = std::unique_ptr<PSOContainer>(
@@ -204,5 +229,6 @@ void PostProcessingComponent::Dispose()
 	backBufferContainer = nullptr;
 	//taaComponent = nullptr;
 	lutComponent = nullptr;
+	motionBlurComponent = nullptr;
 	//testTex.Destroy();
 }

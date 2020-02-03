@@ -18,7 +18,7 @@ void Skybox::Draw(
 	ID3D12Device* device,
 	ConstBufferElement* cameraBuffer,
 	FrameResource* currentResource,
-	PSOContainer* container
+	PSOContainer* container, uint containerIndex
 )
 {
 	UINT value = cameraBuffer->element;
@@ -26,7 +26,7 @@ void Skybox::Draw(
 	desc.meshLayoutIndex = fullScreenMesh->GetLayoutIndex();
 	desc.shaderPass = targetPass;
 	desc.shaderPtr = shader;
-	ID3D12PipelineState* pso = container->GetState(desc, device);
+	ID3D12PipelineState* pso = container->GetState(desc, device, containerIndex);
 	commandList->SetPipelineState(pso);
 	shader->BindRootSignature(commandList, World::GetInstance()->GetGlobalDescHeap());
 	shader->SetResource(commandList, ShaderID::GetMainTex(), World::GetInstance()->GetGlobalDescHeap(), descHeapIndex);

@@ -389,14 +389,14 @@ void  GRP_Renderer::DrawCommand(
 	ID3D12Device* device,
 	UINT targetShaderPass,
 	ConstBufferElement& cameraProperty,
-	PSOContainer* container
+	PSOContainer* container, uint containerIndex
 )
 {
 	PSODescriptor desc;
 	desc.meshLayoutIndex = meshLayoutIndex;
 	desc.shaderPass = targetShaderPass;
 	desc.shaderPtr = shader;
-	ID3D12PipelineState* pso = container->GetState(desc, device);
+	ID3D12PipelineState* pso = container->GetState(desc, device, containerIndex);
 	commandList->SetPipelineState(pso);
 	shader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), cameraProperty.buffer, cameraProperty.element);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

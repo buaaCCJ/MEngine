@@ -77,10 +77,7 @@ public:
 	void operator()()
 	{
 		commandList->ResetCommand();
-		if (psoContainer == nullptr ||
-			psoContainer->GetColorFormats()[0] != gbufferTex->GetColorFormat() ||
-			psoContainer->GetColorFormats()[1] != mvTex->GetColorFormat() ||
-			psoContainer->GetDepthFormat() != depthTex->GetColorFormat())
+		if (psoContainer == nullptr)
 		{
 			DXGI_FORMAT rtFormats[2];
 			rtFormats[0] = gbufferTex->GetColorFormat();
@@ -121,7 +118,7 @@ public:
 			device,
 			&skyboxData,
 			resource,
-			psoContainer.get()
+			psoContainer.get(), 0
 		);
 		commandList->CloseCommand();
 	}

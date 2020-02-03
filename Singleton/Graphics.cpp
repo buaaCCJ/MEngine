@@ -133,7 +133,7 @@ void Graphics::Blit(
 	D3D12_CPU_DESCRIPTOR_HANDLE* renderTarget,
 	UINT renderTargetCount,
 	D3D12_CPU_DESCRIPTOR_HANDLE* depthTarget,
-	PSOContainer* container,
+	PSOContainer* container, uint containerIndex,
 	UINT width, UINT height,
 	Shader* shader, UINT pass)
 {
@@ -146,22 +146,9 @@ void Graphics::Blit(
 	commandList->OMSetRenderTargets(renderTargetCount, renderTarget, false, depthTarget);
 	commandList->RSSetViewports(1, &mViewport);
 	commandList->RSSetScissorRects(1, &mScissorRect);
-	commandList->SetPipelineState(container->GetState(psoDesc, device));
+	commandList->SetPipelineState(container->GetState(psoDesc, device, containerIndex));
 	commandList->IASetVertexBuffers(0, 1, &fullScreenMesh->VertexBufferView());
 	commandList->IASetIndexBuffer(&fullScreenMesh->IndexBufferView());
 	commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->DrawIndexedInstanced(fullScreenMesh->GetIndexCount(), 1, 0, 0, 0);
-}
-
-void Graphics::ResourceStateTransform(
-	ID3D12GraphicsCommandList* commandList,
-	D3D12_RESOURCE_STATES beforeState,
-	D3D12_RESOURCE_STATES afterState,
-	ID3D12Resource* resource)
-{
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-		resource,
-		beforeState,
-		afterState
-	));
 }

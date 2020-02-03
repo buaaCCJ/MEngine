@@ -47,7 +47,6 @@ struct appdata
         {
             // Sample the motion vector.
             float2 v = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, bilinearClampSampler, i.texcoord, 0).rg;
-
             // Apply the exposure time and convert to the pixel space.
             v *= (_VelocityScale * 0.5) * _MainTex_TexelSize.zw;
 
@@ -58,7 +57,7 @@ struct appdata
             float d = Linear01Depth(_CameraDepthTexture.SampleLevel(bilinearClampSampler, i.texcoord, 0).r, _ZBufferParams);
 
             // Pack into 10/10/10/2 format.
-            return  float4((v * _RcpMaxBlurRadius + 1.0) * 0.5, d, 0.0);
+            return float4((v * _RcpMaxBlurRadius + 1.0) * 0.5, d, 0.0);
         }
 
         float2 MaxV(float2 v1, float2 v2)
@@ -143,7 +142,6 @@ struct appdata
             float2 va = MaxV(v1, MaxV(v2, v3));
             float2 vb = MaxV(v4, MaxV(v5, v6));
             float2 vc = MaxV(v7, MaxV(v8, v9));
-
             return float4(MaxV(va, MaxV(vb, vc)) * (1.0 / cw), 0.0, 0.0);
         }
 
@@ -176,7 +174,7 @@ struct appdata
         {
             //return float4(i.texcoord, 0, 0);
             // Color sample at the center point
-            const float4 c_p = SAMPLE_TEXTURE2D_LOD(_MainTex, bilinearClampSampler, i.texcoord, 0);
+            const float4 c_p = _MainTex[i.vertex.xy];
 
             // Velocity/Depth sample at the center point
             const float3 vd_p = SampleVelocity(i.texcoord);
@@ -186,11 +184,9 @@ struct appdata
             // NeighborMax vector sample at the center point
             const float2 v_max = SAMPLE_TEXTURE2D_LOD(_NeighborMaxTex, bilinearClampSampler, i.texcoord + JitterTile(i.texcoord), 0).xy;
             const float l_v_max = length(v_max);
-            const float rcp_l_v_max = 1.0 / l_v_max;
-
             // Escape early if the NeighborMax vector is small enough.
             if (l_v_max < 2.0) return c_p;
-
+            const float rcp_l_v_max = 1.0 / l_v_max;
             // Use V_p as a secondary sampling direction except when it's too small
             // compared to V_max. This vector is rescaled to be the length of V_max.
             const float2 v_alt = (l_v_p * 2.0 > l_v_max) ? vd_p.xy * (l_v_max / l_v_p) : v_max;

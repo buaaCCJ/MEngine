@@ -106,5 +106,6 @@ public:
 		lutBakeShader->SetResource(cmdList, ShaderID::PropertyToID("Params"), &cbuffer, 0);
 		lutBakeShader->SetResource(cmdList, ShaderID::PropertyToID("_MainTex"), &heap, 0);
 		lutBakeShader->Dispatch(cmdList, 0, groupSize, groupSize, groupSize);
+		Graphics::ResourceStateTransform(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_GENERIC_READ, lut->GetColorResource());
 	}
 };

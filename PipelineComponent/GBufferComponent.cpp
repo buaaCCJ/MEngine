@@ -123,7 +123,7 @@ public:
 				&selfPtr->preintTexture->GetColorDescriptor(0),
 				1,
 				nullptr,
-				selfPtr->preintContainer.get(),
+				selfPtr->preintContainer.get(), 0,
 				selfPtr->preintTexture->GetWidth(),
 				selfPtr->preintTexture->GetHeight(),
 				preintShader,
@@ -171,7 +171,7 @@ public:
 			device,
 			0,
 			resource->cameraCBs[cam->GetInstanceID()],
-			gbufferContainer
+			gbufferContainer, 0
 		);
 
 

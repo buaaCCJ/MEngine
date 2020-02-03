@@ -29,27 +29,29 @@ namespace std
 			return key.hash;
 		}
 	};
+	template <>
+	struct hash<std::pair<uint, PSODescriptor>>
+	{
+		size_t operator()(const std::pair<uint, PSODescriptor>& key) const
+		{
+			return key.first ^ key.second.hash;
+		}
+	};
 }
-class PSOContainer
+struct PSORTSetting
 {
-private:
-	std::unordered_map<PSODescriptor, Microsoft::WRL::ComPtr<ID3D12PipelineState>> allPSOState;
 	DXGI_FORMAT depthFormat;
 	UINT rtCount;
 	DXGI_FORMAT rtFormat[8];
+};
+class PSOContainer
+{
+private:
+	std::unordered_map<std::pair<uint, PSODescriptor>, Microsoft::WRL::ComPtr<ID3D12PipelineState>> allPSOState;
+	
+	std::vector<PSORTSetting> settings;
 public:
-	DXGI_FORMAT* GetColorFormats()
-	{
-		return rtFormat;
-	}
-	UINT GetRTCount() const
-	{
-		return rtCount;
-	}
-	DXGI_FORMAT GetDepthFormat() const
-	{
-		return depthFormat;
-	}
 	PSOContainer(DXGI_FORMAT depthFormat, UINT rtCount, DXGI_FORMAT* allRTFormat);
-	ID3D12PipelineState* GetState(PSODescriptor& desc, ID3D12Device* device);
+	PSOContainer(PSORTSetting* formats, uint formatCount);
+	ID3D12PipelineState* GetState(PSODescriptor& desc, ID3D12Device* device, uint index);
 };

@@ -103,7 +103,7 @@ public:
 			device,
 			1,
 			resource->cameraCBs[cam->GetInstanceID()],
-			depthPrepassContainer
+			depthPrepassContainer, 0
 		);
 		tcmd->CloseCommand();
 	}

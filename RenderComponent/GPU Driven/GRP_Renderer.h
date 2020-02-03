@@ -88,6 +88,6 @@ public:
 		ID3D12Device* device,
 		UINT targetShaderPass,
 		ConstBufferElement& cameraProperty,
-		PSOContainer* container
+		PSOContainer* container, uint containerIndex
 	);
 };
