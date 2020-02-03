@@ -112,9 +112,13 @@ public:
 		UINT mipCount,
 		RenderTextureState initState = RenderTextureState::Render_Target
 	);
-	D3D12_RESOURCE_STATES GetInitState() const
+	D3D12_RESOURCE_STATES GetWriteState() const
 	{
 		return initState;
+	}
+	D3D12_RESOURCE_STATES GetReadState() const
+	{
+		return (bool)usage ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_GENERIC_READ;
 	}
 	RenderTextureUsage GetUsage() const { return usage; }
 	constexpr UINT GetMipCount() { return mipCount; }
@@ -130,3 +134,40 @@ public:
 	void ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice);
 	DXGI_FORMAT GetColorFormat() const { return mFormat; }
 };
+class RenderTextureStateBarrier final
+{
+private:
+	RenderTexture* targetRT;
+	D3D12_RESOURCE_STATES beforeState;
+	D3D12_RESOURCE_STATES afterState;
+	ID3D12GraphicsCommandList* commandList;
+public:
+	RenderTextureStateBarrier(RenderTexture* targetRT, ID3D12GraphicsCommandList* commandList, ResourceReadWriteState targetState) :
+		targetRT(targetRT), commandList(commandList)
+	{
+		if (targetState)
+		{
+			beforeState = targetRT->GetWriteState();
+			afterState = targetRT->GetReadState();
+		}
+		else
+		{
+			afterState = targetRT->GetWriteState();
+			beforeState = targetRT->GetReadState();
+		}
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			targetRT->GetColorResource(),
+			beforeState,
+			afterState
+		));
+	}
+	~RenderTextureStateBarrier()
+	{
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+			targetRT->GetColorResource(),
+			afterState,
+			beforeState
+		));
+	}
+};
+

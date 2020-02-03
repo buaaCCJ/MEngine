@@ -46,7 +46,11 @@ typedef DirectX::XMFLOAT3X4 float3x4;
 typedef DirectX::XMFLOAT4X3 float4x3;
 
 extern const int gNumFrameResources;
-
+enum ResourceReadWriteState : bool
+{
+	Write = false,
+	Read = true
+};
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
 {
     if(obj)

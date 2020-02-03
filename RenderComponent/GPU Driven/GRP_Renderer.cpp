@@ -59,7 +59,7 @@ public:
 		cmdDrawBuffers(new UploadBuffer(device, capacity, false, sizeof(MultiDrawCommand)))
 	{
 		allocatedObjects.reserve(capacity);
-		
+
 	}
 
 	void Resize(
@@ -119,7 +119,7 @@ public:
 				cmdDrawBuffers->CopyData(count, &c.cmd);
 				count++;
 			}
-				break;
+			break;
 			case Command::CommandType_Remove:
 				if (c.index != last)
 				{
@@ -142,10 +142,10 @@ public:
 				mappedPtr->id = c.objData.id;
 				objectPosBuffer->CopyData(c.index, &c.objData);
 			}
-				break;
+			break;
 			case Command::CommandType::CommandType_Renderer:
 				cEle = allocatedObjects[c.index];
-				c.cmd.objectCBufferAddress = cEle.buffer->GetAddress(cEle.element); 
+				c.cmd.objectCBufferAddress = cEle.buffer->GetAddress(cEle.element);
 				cmdDrawBuffers->CopyData(c.index, &c.cmd);
 				break;
 			}
@@ -207,7 +207,7 @@ GRP_Renderer::RenderElement& GRP_Renderer::AddRenderElement(
 		return elements[ite->second];
 	}
 	dicts.insert_or_assign(targetTrans.operator->(), elements.size());
-	
+
 	RenderElement& ele = elements.emplace_back(
 		&targetTrans,
 		mesh->boundingCenter,
@@ -232,7 +232,7 @@ GRP_Renderer::RenderElement& GRP_Renderer::AddRenderElement(
 	*ptr = targetTrans->GetLocalToWorldMatrix();
 	for (UINT i = 0, size = FrameResource::mFrameResources.size(); i < size; ++i)
 	{
-		GpuDrivenRenderer* perFrameData = (GpuDrivenRenderer*)FrameResource::mFrameResources[i]->GetResource( this, [=]()->GpuDrivenRenderer*
+		GpuDrivenRenderer* perFrameData = (GpuDrivenRenderer*)FrameResource::mFrameResources[i]->GetResource(this, [=]()->GpuDrivenRenderer*
 		{
 			return new GpuDrivenRenderer(device, capacity);
 		});
@@ -379,10 +379,11 @@ void GRP_Renderer::Culling(
 	cullShader->SetStructuredBufferByAddress(commandList, _OutputBuffer, cullResultBuffer->GetAddress(0, 0));
 	cullShader->SetStructuredBufferByAddress(commandList, _CountBuffer, cullResultBuffer->GetAddress(1, 0));
 	cullShader->SetResource(commandList, CullBuffer, cullDataBuffer.buffer, cullDataBuffer.element);
-	cullResultBuffer->TransformBufferState(commandList, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	cullShader->Dispatch(commandList, 1, 1, 1, 1);
-	cullShader->Dispatch(commandList, 0, dispatchCount, 1, 1);
-	cullResultBuffer->TransformBufferState(commandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+	{
+		StructuredBufferStateBarrier barrier(commandList, cullResultBuffer.get(), StructuredBufferState_Indirect, StructuredBufferState_UAV);
+		cullShader->Dispatch(commandList, 1, 1, 1, 1);
+		cullShader->Dispatch(commandList, 0, dispatchCount, 1, 1);
+	}
 }
 void  GRP_Renderer::DrawCommand(
 	ID3D12GraphicsCommandList* commandList,

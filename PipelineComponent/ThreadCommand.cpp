@@ -14,7 +14,7 @@ void ThreadCommand::CloseCommand()
 		if (ite->second)
 		{
 			D3D12_RESOURCE_STATES writeState, readState;
-			writeState = ite->first->GetInitState();
+			writeState = ite->first->GetWriteState();
 			if (ite->first->GetUsage() == RenderTextureUsage::RenderTextureUsage_ColorBuffer)
 			{
 				readState = D3D12_RESOURCE_STATE_GENERIC_READ;
@@ -79,7 +79,7 @@ void ThreadCommand::SetResourceReadWriteState(RenderTexture* rt, ResourceReadWri
 			return;
 	}
 	D3D12_RESOURCE_STATES writeState, readState;
-	writeState = rt->GetInitState();
+	writeState = rt->GetWriteState();
 	if (rt->GetUsage() == RenderTextureUsage::RenderTextureUsage_ColorBuffer)
 	{
 		readState = D3D12_RESOURCE_STATE_GENERIC_READ;

@@ -10,11 +10,6 @@ enum BackBufferState
 	BackBufferState_RenderTarget = 1
 };
 
-enum CopyTarget
-{
-	CopyTarget_DepthBuffer = 0,
-	CopyTarget_ColorBuffer = 1
-};
 
 class Graphics
 {
@@ -45,8 +40,8 @@ public:
 
 	static void CopyTexture(
 		ID3D12GraphicsCommandList* commandList,
-		RenderTexture* source, CopyTarget sourceTarget, UINT sourceSlice, UINT sourceMipLevel,
-		RenderTexture* dest, CopyTarget destTarget, UINT destSlice, UINT destMipLevel);
+		RenderTexture* source, UINT sourceSlice, UINT sourceMipLevel,
+		RenderTexture* dest, UINT destSlice, UINT destMipLevel);
 
 	static void CopyBufferToTexture(
 		ID3D12GraphicsCommandList* commandList,

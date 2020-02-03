@@ -11,11 +11,7 @@ struct StateTransformBuffer
 class PipelineComponent;
 class StructuredBuffer;
 class RenderTexture;
-enum ResourceReadWriteState : bool
-{
-	Write = false,
-	Read = true
-};
+
 class ThreadCommand final
 {
 	friend class PipelineComponent;

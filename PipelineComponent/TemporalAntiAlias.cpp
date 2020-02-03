@@ -49,7 +49,7 @@ struct TAACameraData : public IPipelineResource
 	std::unique_ptr<RenderTexture> lastMotionVectorTexture;
 	UINT width, height;
 private:
-	void Update(UINT width, UINT height, ID3D12Device* device)
+	void Update(UINT width, UINT height, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 	{
 		this->width = width;
 		this->height = height;
@@ -67,18 +67,21 @@ private:
 		lastMotionVectorTexture = std::unique_ptr<RenderTexture>(
 			new RenderTexture(device, width, height, rtFormat, RenderTextureDimension_Tex2D, 0, 0)
 			);
+		Graphics::ResourceStateTransform(cmdList, lastRenderTarget->GetWriteState(), lastRenderTarget->GetReadState(), lastRenderTarget->GetColorResource());
+		Graphics::ResourceStateTransform(cmdList, lastDepthTexture->GetWriteState(), lastDepthTexture->GetReadState(), lastDepthTexture->GetColorResource());
+		Graphics::ResourceStateTransform(cmdList, lastMotionVectorTexture->GetWriteState(), lastMotionVectorTexture->GetReadState(), lastMotionVectorTexture->GetColorResource());
 	}
 public:
-	TAACameraData(UINT width, UINT height, ID3D12Device* device)
+	TAACameraData(UINT width, UINT height, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 	{
-		Update(width, height, device);
+		Update(width, height, device, cmdList);
 	}
 
-	bool UpdateFrame(UINT width, UINT height, ID3D12Device* device)
+	bool UpdateFrame(UINT width, UINT height, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 	{
 		if (width != this->width || height != this->height)
 		{
-			Update(width, height, device);
+			Update(width, height, device, cmdList);
 			return true;
 		}
 		return false;
@@ -115,16 +118,21 @@ public:
 		});
 		TAACameraData* tempCamData = (TAACameraData*)cam->GetResource(this, [&]()->TAACameraData*
 		{
-			return new TAACameraData(width, height, device);
+			return new TAACameraData(width, height, device, commandList);
 		});
 		TAAFrameData* tempFrameData = (TAAFrameData*)res->GetPerCameraResource(this, cam, [&]()->TAAFrameData*
 		{
 			return new TAAFrameData(device);
 		});
-		if (tempCamData->UpdateFrame(width, height, device))
+		RenderTextureStateBarrier barrier(inputColorBuffer, commandList, ResourceReadWriteState::Read);
+		RenderTextureStateBarrier barrier1(inputDepthBuffer, commandList, ResourceReadWriteState::Read);
+		RenderTextureStateBarrier barrier2(motionVector, commandList, ResourceReadWriteState::Read);
+		if (tempCamData->UpdateFrame(width, height, device, commandList))
 		{
 			//Refresh & skip
-			Graphics::CopyTexture(commandList, inputColorBuffer, CopyTarget_ColorBuffer, 0, 0, renderTargetTex, CopyTarget_ColorBuffer, 0, 0);
+			Graphics::ResourceStateTransform(commandList, renderTargetTex->GetWriteState(), D3D12_RESOURCE_STATE_COPY_DEST, renderTargetTex->GetColorResource());
+			Graphics::CopyTexture(commandList, inputColorBuffer, 0, 0, renderTargetTex, 0, 0);
+			Graphics::ResourceStateTransform(commandList,D3D12_RESOURCE_STATE_COPY_DEST, renderTargetTex->GetWriteState(), renderTargetTex->GetColorResource());
 		}
 		else
 		{
@@ -146,29 +154,36 @@ public:
 			constBufferData._Jitter = camTransData->jitter;
 			constBufferData._LastJitter = camTransData->lastFrameJitter;
 			tempFrameData->taaBuffer.CopyData(0, &constBufferData);
-			
+
 			taaShader->BindRootSignature(commandList, &tempFrameData->srvHeap);
 			taaShader->SetResource(commandList, TAAConstBuffer_Index, &tempFrameData->taaBuffer, 0);
 			taaShader->SetResource(commandList, ShaderID::GetMainTex(), &tempFrameData->srvHeap, 0);
-			tCmd->SetResourceReadWriteState(inputColorBuffer, ResourceReadWriteState::Read);
-			tCmd->SetResourceReadWriteState(inputDepthBuffer, ResourceReadWriteState::Read);
-			tCmd->SetResourceReadWriteState(motionVector, ResourceReadWriteState::Read);
+
 			Graphics::Blit(
 				commandList,
 				device,
 				&renderTargetTex->GetColorDescriptor(0), 1,
 				nullptr,
-				toRTContainer,0,
+				toRTContainer, 0,
 				width, height,
 				taaShader, 0
 			);
-			tCmd->SetResourceReadWriteState(inputColorBuffer, ResourceReadWriteState::Write);
-			tCmd->SetResourceReadWriteState(inputDepthBuffer, ResourceReadWriteState::Write);
-			tCmd->SetResourceReadWriteState(motionVector, ResourceReadWriteState::Write);
+
 		}
-		Graphics::CopyTexture(commandList, renderTargetTex, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastRenderTarget.get(), CopyTarget_ColorBuffer, 0, 0);
-		Graphics::CopyTexture(commandList, motionVector, CopyTarget_ColorBuffer, 0, 0, tempCamData->lastMotionVectorTexture.get(), CopyTarget_ColorBuffer, 0, 0);
-		Graphics::CopyTexture(commandList, inputDepthBuffer, CopyTarget_DepthBuffer, 0, 0, tempCamData->lastDepthTexture.get(), CopyTarget_ColorBuffer, 0, 0);
+		
+		Graphics::ResourceStateTransform(commandList, tempCamData->lastRenderTarget->GetReadState(), D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastRenderTarget->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, tempCamData->lastMotionVectorTexture->GetReadState(), D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastMotionVectorTexture->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, tempCamData->lastDepthTexture->GetReadState(), D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastDepthTexture->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, renderTargetTex->GetWriteState(), D3D12_RESOURCE_STATE_COPY_SOURCE, renderTargetTex->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, inputDepthBuffer->GetReadState(), D3D12_RESOURCE_STATE_COPY_SOURCE, inputDepthBuffer->GetColorResource());
+		Graphics::CopyTexture(commandList, renderTargetTex, 0, 0, tempCamData->lastRenderTarget.get(), 0, 0);
+		Graphics::CopyTexture(commandList, motionVector, 0, 0, tempCamData->lastMotionVectorTexture.get(), 0, 0);
+		Graphics::CopyTexture(commandList, inputDepthBuffer, 0, 0, tempCamData->lastDepthTexture.get(), 0, 0);
+		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastRenderTarget->GetReadState(), tempCamData->lastRenderTarget->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastMotionVectorTexture->GetReadState(), tempCamData->lastMotionVectorTexture->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_DEST, tempCamData->lastDepthTexture->GetReadState(), tempCamData->lastDepthTexture->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE, renderTargetTex->GetWriteState(), renderTargetTex->GetColorResource());
+		Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE, inputDepthBuffer->GetReadState(), inputDepthBuffer->GetColorResource());
 	}
 };
 

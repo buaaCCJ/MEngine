@@ -32,6 +32,7 @@ enum CommandListType
 	CommandListType_Graphics = 1,
 	CommandListType_Compute = 2
 };
+
 struct RequiredRT
 {
 	UINT descIndex;
@@ -90,7 +91,7 @@ protected:
 		cpuDepending.clear();
 		cpuDepending.reserve(sizeof...(Args));
 		Depending<Args...> d(cpuDepending);
-		
+
 	}
 	template <typename... Args>
 	void SetGPUDepending()

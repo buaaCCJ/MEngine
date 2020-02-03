@@ -36,30 +36,12 @@ void Graphics::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* comma
 		));
 
 }
-template <bool sourceIsDepth, bool destIsDepth>
-inline void Copy(
-	D3D12_TEXTURE_COPY_LOCATION& sourceLocation,
-	D3D12_TEXTURE_COPY_LOCATION& destLocation,
-	ID3D12GraphicsCommandList* commandList)
-{
-	const D3D12_RESOURCE_STATES sourceFormat = sourceIsDepth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_RENDER_TARGET;
-	const D3D12_RESOURCE_STATES destFormat = destIsDepth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_RENDER_TARGET;
-	Graphics::ResourceStateTransform(commandList, sourceFormat, D3D12_RESOURCE_STATE_COPY_SOURCE, sourceLocation.pResource);
-	Graphics::ResourceStateTransform(commandList, destFormat, D3D12_RESOURCE_STATE_COPY_DEST, destLocation.pResource);
-	commandList->CopyTextureRegion(
-		&destLocation,
-		0, 0, 0,
-		&sourceLocation,
-		nullptr
-	);
-	Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE, sourceFormat, sourceLocation.pResource);
-	Graphics::ResourceStateTransform(commandList, D3D12_RESOURCE_STATE_COPY_DEST, destFormat, destLocation.pResource);
-}
+
 
 void Graphics::CopyTexture(
 	ID3D12GraphicsCommandList* commandList,
-	RenderTexture* source, CopyTarget sourceTarget, UINT sourceSlice, UINT sourceMipLevel,
-	RenderTexture* dest, CopyTarget destTarget, UINT destSlice, UINT destMipLevel)
+	RenderTexture* source, UINT sourceSlice, UINT sourceMipLevel,
+	RenderTexture* dest,  UINT destSlice, UINT destMipLevel)
 {
 	if (source->GetType() == RenderTextureDimension_Tex2D) sourceSlice = 0;
 	if (dest->GetType() == RenderTextureDimension_Tex2D) destSlice = 0;
@@ -71,28 +53,12 @@ void Graphics::CopyTexture(
 	destLocation.SubresourceIndex = destSlice * dest->GetMipCount() + destMipLevel;
 	sourceLocation.pResource = source->GetColorResource();
 	destLocation.pResource = dest->GetColorResource();
-	if (sourceTarget == CopyTarget_ColorBuffer)
-	{
-		if (destTarget == CopyTarget_ColorBuffer)    //Source Color, Dest Color
-		{
-			Copy<false, false>(sourceLocation, destLocation, commandList);
-		}
-		else    //Source Color, Dest Depth
-		{
-			Copy<false, true>(sourceLocation, destLocation, commandList);
-		}
-	}
-	else
-	{
-		if (destTarget == CopyTarget_ColorBuffer)    //Source Depth, Dest Color
-		{
-			Copy<true, false>(sourceLocation, destLocation, commandList);
-		}
-		else    //Source Depth, Dest Depth
-		{
-			Copy<true, true>(sourceLocation, destLocation, commandList);
-		}
-	}
+	commandList->CopyTextureRegion(
+		&destLocation,
+		0, 0, 0,
+		&sourceLocation,
+		nullptr
+	);
 }
 
 void Graphics::CopyBufferToTexture(
