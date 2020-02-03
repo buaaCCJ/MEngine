@@ -100,7 +100,7 @@ void RenderPipeline::PrepareRendering(RenderPipelineData& renderData, JobSystem*
 			data.device, commandList->GetCmdList(), renderData.resource))
 		{
 		}
-		commandList->CloseCommand();
+		commandList->GetCmdList()->Close();
 	});
 	currentCommandBuffer->ExecuteGraphicsCommandList(commandList->GetCmdList());
 	for (UINT camIndex = 0; camIndex < renderData.allCameras->size(); ++camIndex)

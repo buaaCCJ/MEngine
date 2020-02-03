@@ -1,9 +1,5 @@
 #pragma once
-#include <d3d12.h>
-#include <DirectXMath.h>
-#include <memory>
-#include <vector>
-
+#include "../Common/d3dUtil.h"
 class CommandBuffer
 {
 private:

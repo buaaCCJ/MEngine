@@ -9,16 +9,49 @@ void CommandBuffer::Clear()
 }
 void CommandBuffer::Submit()
 {
+	uint startPos = 0;
+	uint commandType = 2;
+	uint executeCommandCount = 0;
+	auto executeCmdList = [&](uint i)->void
+	{
+		if (commandType != i)
+		{
+			if (executeCommandCount > 0)
+			{
+				if (commandType == 0)
+				{
+					graphicsCommandQueue->ExecuteCommandLists(executeCommandCount, (ID3D12CommandList**)(graphicsCmdLists.data() + startPos));
+				}
+				else if (commandType == 1)
+				{
+					computeCommandQueue->ExecuteCommandLists(executeCommandCount, (ID3D12CommandList**)(graphicsCmdLists.data() + startPos));
+				}
+				startPos += executeCommandCount;
+				executeCommandCount = 0;
+			}
+			commandType = i;
+		}
+		if (i < 2)
+		{
+			executeCommandCount++;
+		}
+	};
 	for (auto ite = executeCommands.begin(); ite != executeCommands.end(); ++ite)
 	{
 		switch (ite->type)
 		{
 		case InnerCommand::CommandType_ExecuteGraphics:
-			graphicsCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList**)(graphicsCmdLists.data() + ite->executeIndex));
+			executeCmdList(0);
 			break;
 		case InnerCommand::CommandType_ExecuteCompute:
-			computeCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList**)(graphicsCmdLists.data() + ite->executeIndex));
+			executeCmdList(1);
 			break;
+		default:
+			executeCmdList(2);
+			break;
+		}
+		switch(ite->type)
+		{
 		case InnerCommand::CommandType_WaitGraphics:
 			graphicsCommandQueue->Wait(ite->waitFence.fence, ite->waitFence.frameIndex);
 			break;
@@ -33,6 +66,7 @@ void CommandBuffer::Submit()
 			break;
 		}
 	}
+	executeCmdList(2);
 }
 
 void CommandBuffer::WaitForCompute(ID3D12Fence* computeFence, UINT currentFrame)
