@@ -14,10 +14,10 @@ void GetLensDistortion(
 ) {
 	
 	float amount = abs(DistortionIntensity);
-	amount = 1.6f * max(amount, 1);
-	float theta = 0.0174532924 * min(160, amount);
+	amount = 1.6f * max<float>(amount, 1);
+	float theta = 0.0174532924 * min<float>(160, amount);
 	float sigma = 2.0 * tan(theta * 0.5);
-	Vector4 p0(DistortionCenterX, DistortionCenterY, max(DistortionIntensityX, 1e-4), max(DistortionIntensityY, 1e-4));
+	Vector4 p0(DistortionCenterX, DistortionCenterY, max<float>(DistortionIntensityX, 1e-4), max<float>(DistortionIntensityY, 1e-4));
 	Vector4 p1(DistortionIntensity >= 0 ? theta : 1.0 / theta, sigma, 1.0 / DistortionScale, DistortionIntensity);
 	centerScale = p0;
 	amountResult = p1;

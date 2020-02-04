@@ -118,7 +118,7 @@ UINT GetCoveredSize(
 	UINT level = (UINT)(0.8 + log2(fullSize / vecLength));
 	const UINT legalLevel = SceneTree::maxTreeLevel - 1;
 	level = min(level, legalLevel);
-	level = max(level, 0);
+	level = max<uint>(level, 0);
 	double size = pow(2.0, level);
 	UINT sizeInt = (UINT)(size - 0.9);
 	//Get UV

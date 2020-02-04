@@ -78,7 +78,7 @@ void RenderPipeline::PrepareRendering(RenderPipelineData& renderData, JobSystem*
 #endif
 {
 	CommandBuffer* currentCommandBuffer = renderData.resource->commandBuffer.get();
-	UINT camSize = max(renderData.allCameras->size(), 1);
+	UINT camSize = max<size_t>(renderData.allCameras->size(), 1);
 	UINT bucketCountBeforeRendering = bucketArray.size();
 	for (int i = 0; i <= camSize; ++i)
 	{

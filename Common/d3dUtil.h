@@ -5,7 +5,7 @@
 //***************************************************************************************
 
 #pragma once
-
+#define NOMINMAX
 #include <windows.h>
 #include <wrl.h>
 #include <dxgi1_4.h>
@@ -28,6 +28,7 @@
 #include "d3dx12.h"
 #include "MathHelper.h"
 #include "DXMath/DXMath.h"
+
 typedef DirectX::XMFLOAT2 float2;
 typedef DirectX::XMFLOAT3 float3;
 typedef DirectX::XMFLOAT4 float4;

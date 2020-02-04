@@ -104,6 +104,7 @@ void GetCascadeShadowmapMatrices(
 	uint distanceCount,
 	XMFLOAT4* results)
 {
+	const float zDepth = 500;
 	Vector3 corners[8];
 	Vector3* lastCorners = corners;
 	Vector3* nextCorners = corners + 4;
@@ -125,7 +126,8 @@ void GetCascadeShadowmapMatrices(
 		float farDist = distance(nextCorners[0], nextCorners[3]);
 		float crossDist = distance(lastCorners[0], nextCorners[3]);
 		float maxDist = max(farDist, crossDist);
-		
+		Matrix4 projMatrix = XMMatrixOrthographicLH(maxDist / 2, maxDist / 2, -zDepth, zDepth);
+
 	}
 }
 
@@ -145,7 +147,7 @@ struct LightingRunnable
 		XMVECTOR vec[6];
 		memcpy(vec, prepareComp->frustumPlanes, sizeof(XMVECTOR) * 6);
 		XMVECTOR camForward = cam->GetLook();
-		vec[0] = MathLib::GetPlane(std::move(camForward), std::move((XMVECTOR)cam->GetPosition() + min(cam->GetFarZ(), clusterLightFarPlane) * camForward));
+		vec[0] = MathLib::GetPlane(std::move(camForward), std::move((XMVECTOR)cam->GetPosition() + min<double>(cam->GetFarZ(), clusterLightFarPlane) * camForward));
 		Light::GetLightingList(lights,
 			vec,
 			std::move(prepareComp->frustumMinPos),
@@ -156,7 +158,7 @@ struct LightingRunnable
 		});
 		if (lightData->lightsInFrustum.GetElementCount() < lights.size())
 		{
-			uint maxSize = max(lights.size(), (uint)(lightData->lightsInFrustum.GetElementCount() * 1.5));
+			uint maxSize = max<size_t>(lights.size(), (uint)(lightData->lightsInFrustum.GetElementCount() * 1.5));
 			lightData->lightsInFrustum.Create(device, maxSize, false, sizeof(LightCommand));
 		}
 		LightCullCBuffer& cb = *(LightCullCBuffer*)lightData->lightCBuffer.GetMappedDataPtr(0);

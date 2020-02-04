@@ -62,7 +62,7 @@ public:
 	float GetIntensity() const { return intensity; }
 	float SetIntensity(float intensity) { 
 		
-		intensity = max(0, intensity);
+		intensity = max<float>(0, intensity);
 		isDirty = true;
 		this->intensity = intensity; 
 	}
@@ -70,16 +70,16 @@ public:
 	void SetSpotAngle(float angle)
 	{
 		isDirty = true;
-		angle = max(1, angle);
+		angle = max<float>(1, angle);
 		this->angle = angle;
 	}
 	DirectX::XMFLOAT3 GetColor() const { return color; }
 	void SetColor(DirectX::XMFLOAT3 value)
 	{
 		isDirty = true;
-		value.x = max(0, value.x);
-		value.y = max(0, value.y);
-		value.z = max(0, value.z);
+		value.x = max<float>(0, value.x);
+		value.y = max<float>(0, value.y);
+		value.z = max<float>(0, value.z);
 		color = value;
 	}
 	bool ShadowEnabled() const { return enableShadow; }
@@ -90,7 +90,7 @@ public:
 	}
 	void SetShadowSoftValue(float value)
 	{
-		value = max(0, value);
+		value = max<float>(0, value);
 		isDirty = true;
 		shadowSoftValue = value;
 	}

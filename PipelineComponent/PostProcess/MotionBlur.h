@@ -160,7 +160,7 @@ public:
 		float tileMaxOffs = (tileSize / 8.0f - 1.0f) * -0.5f;
 		cbData._TileMaxOffs = tileMaxOffs;
 		cbData._TileMaxLoop = floor(tileSize / 8.0f);
-		cbData._LoopCount = max(sampleCount / 2, 1);
+		cbData._LoopCount = max<uint>(sampleCount / 2, 1);
 		cbData._ScreenParams = float2(width, height);
 		cbData._ZBufferParams = _ZBufferParams;
 		float4 mainTexSize(1.0f / width, 1.0f / height, width, height);

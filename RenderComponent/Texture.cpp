@@ -60,11 +60,11 @@ void ReadData(const std::wstring& str, TextureData& headerResult, std::vector<ch
 		for (UINT i = 0; i < headerResult.mipCount; ++i)
 		{
 			UINT currentChunkSize = stride * width * height;
-			size += max(currentChunkSize, 512);
+			size += max<uint>(currentChunkSize, 512);
 			width /= 2;
 			height /= 2;
-			width = max(1, width);
-			height = max(1, height);
+			width = max<uint>(1, width);
+			height = max<uint>(1, height);
 		}
 	}
 	dataResult.resize(size);
@@ -171,7 +171,7 @@ public:
 					texFormat, currentOffset
 				);
 				UINT chunkOffset = currentOffset * curWidth * curHeight;
-				offset += max(chunkOffset, 512);
+				offset += max<uint>(chunkOffset, 512);
 				curWidth /= 2;
 				curHeight /= 2;
 			}
@@ -195,7 +195,7 @@ public:
 						texFormat, currentOffset
 					);
 					UINT chunkOffset = currentOffset * curWidth * curHeight;
-					offset += max(chunkOffset, 512);
+					offset += max<uint>(chunkOffset, 512);
 					curWidth /= 2;
 					curHeight /= 2;
 				}

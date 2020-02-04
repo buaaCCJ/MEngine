@@ -147,7 +147,7 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 		arraySize = 1;
 		break;
 	default:
-		arraySize = max(1, depthCount);
+		arraySize = max<uint>(1, depthCount);
 		break;
 	}
 	if (rtFormat.usage == RenderTextureUsage::RenderTextureUsage_ColorBuffer)
@@ -155,7 +155,7 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 		mFormat = rtFormat.colorFormat;
 
 
-		mipCount = max(1, mipCount);
+		mipCount = max<uint>(1, mipCount);
 		this->mipCount = mipCount;
 		depthSlice = arraySize;
 		D3D12_RESOURCE_DESC texDesc;

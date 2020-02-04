@@ -122,7 +122,7 @@ bool CrateApp::Initialize()
 	buckets[0].reserve(20);
 	buckets[1].reserve(20);
 	UINT cpuCoreCount = std::thread::hardware_concurrency() - 2;	//One for main thread & one for loading
-	pipelineJobSys = std::unique_ptr<JobSystem>(new JobSystem(max(1, cpuCoreCount)));
+	pipelineJobSys = std::unique_ptr<JobSystem>(new JobSystem(max<uint>(1, cpuCoreCount)));
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
