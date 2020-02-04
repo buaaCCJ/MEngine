@@ -30,31 +30,30 @@ public:
 	virtual ~Camera();
 	Camera(ID3D12Device* device, CameraRenderPath rtType);
 	// Get/Set world camera position.
-	DirectX::XMVECTOR GetPosition()const;
-	DirectX::XMFLOAT3 GetPosition3f()const;
+	Math::Vector3 GetPosition() const { return mPosition; }
 	void SetPosition(double x, double y, double z);
 	void SetPosition(const DirectX::XMFLOAT3& v);
 
 	// Get camera basis vectors.
-	DirectX::XMVECTOR GetRight()const;
-	DirectX::XMFLOAT3 GetRight3f()const;
-	DirectX::XMVECTOR GetUp()const;
-	DirectX::XMFLOAT3 GetUp3f()const;
-	DirectX::XMVECTOR GetLook()const;
-	DirectX::XMFLOAT3 GetLook3f()const;
+	Math::Vector3 GetRight()const { return mRight; }
+	Math::Vector3 GetUp()const { return mUp; }
+	Math::Vector3 GetLook()const { return mLook; }
 
 	// Get frustum properties.
-	double GetNearZ()const;
-	double GetFarZ()const;
-	double GetAspect()const;
-	double GetFovY()const;
-	double GetFovX()const;
+	double GetNearZ()const { return mNearZ; }
+	double GetFarZ()const { return mFarZ; }
+	double GetAspect()const { return mAspect; }
+	double GetFovY()const { return mFovY; }
+	double GetFovX()const {
+		double halfWidth = 0.5*GetNearWindowWidth();
+		return 2.0*atan(halfWidth / mNearZ);
+	}
 
 	// Get near and far plane dimensions in view space coordinates.
-	double GetNearWindowWidth()const;
-	double GetNearWindowHeight()const;
-	double GetFarWindowWidth()const;
-	double GetFarWindowHeight()const;
+	double GetNearWindowWidth()const{ return mAspect * mNearWindowHeight; }
+	double GetNearWindowHeight()const{ return mNearWindowHeight; }
+	double GetFarWindowWidth()const{ return mAspect * mFarWindowHeight; }
+	double GetFarWindowHeight()const{ return mFarWindowHeight; }
 
 	// Set frustum.
 	void SetLens(double fovY, double aspect, double zn, double zf);
@@ -64,15 +63,12 @@ public:
 	void LookAt(const DirectX::XMFLOAT3& pos, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up);
 
 	// Get View/Proj matrices.
-	DirectX::XMMATRIX GetView()const;
-	DirectX::XMMATRIX GetProj()const;
-
-	DirectX::XMFLOAT4X4 GetView4x4f()const;
-	DirectX::XMFLOAT4X4 GetProj4x4f()const;
+	Math::Matrix4 GetView()const { return mView; }
+	Math::Matrix4 GetProj()const { return mProj; }
 	void SetProj(const DirectX::XMFLOAT4X4& data);
-	void SetProj(const DirectX::XMMATRIX& data);
+	void SetProj(const Math::Matrix4& data);
 	void SetView(const DirectX::XMFLOAT4X4& data);
-	void SetView(const DirectX::XMMATRIX& data);
+	void SetView(const Math::Matrix4& data);
 	// Strafe/Walk the camera a distance d.
 	void Strafe(double d);
 	void Walk(double d);
@@ -99,7 +95,7 @@ public:
 		}
 		return ite->second;
 	}
-	
+
 private:
 	std::unordered_map<void*, IPipelineResource*> perCameraResource;
 	std::mutex mtx;
@@ -123,7 +119,7 @@ private:
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-	
+
 };
 
 #endif

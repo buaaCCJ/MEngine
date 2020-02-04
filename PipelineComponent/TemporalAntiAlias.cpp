@@ -251,6 +251,7 @@ void TemporalAntiAlias::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLi
 	desc.rtDesc.width = 0;
 	desc.rtDesc.height = 0;
 	desc.rtDesc.type = RenderTextureDimension_Tex2D;
+	desc.rtDesc.state = RenderTextureState::Render_Target;
 	renderTextureContainer = std::unique_ptr<PSOContainer>(
 		new PSOContainer(DXGI_FORMAT_UNKNOWN, 1, &desc.rtDesc.rtFormat.colorFormat)
 		);

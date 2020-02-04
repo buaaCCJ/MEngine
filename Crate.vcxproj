@@ -88,6 +88,7 @@
     <ClInclude Include="Common\d3dUtil.h" />
     <ClInclude Include="Common\d3dx12.h" />
     <ClInclude Include="Common\DXMath\Common.h" />
+    <ClInclude Include="Common\DXMath\DXMath.h" />
     <ClInclude Include="Common\DXMath\Matrix3.h" />
     <ClInclude Include="Common\DXMath\Matrix4.h" />
     <ClInclude Include="Common\DXMath\Quaternion.h" />

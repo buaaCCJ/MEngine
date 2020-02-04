@@ -86,6 +86,7 @@ public:
 		vbufferCommand.descriptor.rtDesc.depthSlice = 1;
 		vbufferCommand.descriptor.rtDesc.rtFormat = format;
 		vbufferCommand.descriptor.rtDesc.type = RenderTextureDimension_Tex2D;
+		vbufferCommand.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 		tempRT.push_back(
 			vbufferCommand
 		);
@@ -98,6 +99,7 @@ public:
 		tileCommand.descriptor.rtDesc.depthSlice = 1;
 		tileCommand.descriptor.rtDesc.rtFormat = format;
 		tileCommand.descriptor.rtDesc.type = RenderTextureDimension_Tex2D;
+		tileCommand.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 		tile2 = tempRT.size();
 		tempRT.push_back(tileCommand);
 		tileCommand.uID = ShaderID::PropertyToID("_Tile4RT");

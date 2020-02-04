@@ -158,7 +158,7 @@ void SkyboxComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList
 	emissionBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	emissionBuffer.descriptor.rtDesc.depthSlice = 1;
 	emissionBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
-
+	emissionBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	tempRT[1].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRT[1].uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
 	tempRT[2].type = TemporalResourceCommand::CommandType_Require_RenderTexture;

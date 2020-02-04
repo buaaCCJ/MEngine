@@ -18,20 +18,21 @@
 namespace Math
 {
 	class Vector4;
-
+	class Matrix3;
 	// A 3-vector with an unspecified fourth component.  Depending on the context, the W can be 0 or 1, but both are implicit.
 	// The actual value of the fourth component is undefined for performance reasons.
 	class Vector3
 	{
+		friend class Matrix3;
 	public:
 
 		INLINE Vector3() {}
-		INLINE Vector3(float x, float y, float z) : m_vec( XMVectorSet(x, y, z, z)){ }
-		INLINE Vector3(const XMFLOAT3& v) : m_vec( XMLoadFloat3(&v)){}
-		INLINE Vector3(const Vector3& v) : m_vec( v){}
-		INLINE Vector3(const Scalar& s) : m_vec(s){}
+		INLINE Vector3(float x, float y, float z) : m_vec(XMVectorSet(x, y, z, 0)) { }
+		INLINE Vector3(const XMFLOAT3& v) : m_vec(XMLoadFloat3(&v)) {}
+		INLINE Vector3(const Vector3& v) : m_vec(v) {}
+		INLINE Vector3(const Scalar& s) : m_vec(s) {}
 		INLINE  Vector3(const Vector4& v);
-		INLINE  Vector3(const FXMVECTOR& vec) : m_vec( vec){}
+		INLINE  Vector3(const FXMVECTOR& vec) : m_vec(vec) {}
 
 		INLINE operator XMVECTOR() const { return m_vec; }
 
@@ -86,8 +87,8 @@ namespace Math
 		INLINE Vector4(float x, float y, float z, float w) : m_vec(XMVectorSet(x, y, z, w)) {}
 		INLINE Vector4(const Vector3& xyz, float w) : m_vec(XMVectorSetW(xyz, w)) {  }
 		INLINE Vector4(const Vector4& v) : m_vec(v) {}
-		INLINE Vector4(const Scalar& s) : m_vec(s){ }
-		INLINE  Vector4(const Vector3& xyz) : m_vec (SetWToOne(xyz) ){ }
+		INLINE Vector4(const Scalar& s) : m_vec(s) { }
+		INLINE  Vector4(const Vector3& xyz) : m_vec(SetWToOne(xyz)) { }
 		INLINE  Vector4(const FXMVECTOR& vec) : m_vec(vec) {}
 		INLINE Vector4(const XMFLOAT4& flt) : m_vec(XMLoadFloat4(&flt)) {}
 
@@ -109,11 +110,21 @@ namespace Math
 		INLINE Vector4 operator/ (const Vector4& v2) const { return Vector4(XMVectorDivide(m_vec, v2)); }
 		INLINE Vector4 operator* (const Scalar&  v2) const { return *this * Vector4(v2); }
 		INLINE Vector4 operator/ (const Scalar&  v2) const { return *this / Vector4(v2); }
+		INLINE Vector4 operator+ (const Scalar&  v2) const { return *this + Vector4(v2); }
+		INLINE Vector4 operator- (const Scalar&  v2) const { return *this - Vector4(v2); }
 		INLINE Vector4 operator* (float   v2) const { return *this * Scalar(v2); }
 		INLINE Vector4 operator/ (float   v2) const { return *this / Scalar(v2); }
+		INLINE Vector4 operator+ (float   v2) const { return *this + Scalar(v2); }
+		INLINE Vector4 operator- (float   v2) const { return *this - Scalar(v2); }
 
-		INLINE void operator*= (float   v2) { *this = *this * Scalar(v2); }
-		INLINE void operator/= (float   v2) { *this = *this / Scalar(v2); }
+		INLINE Vector4& operator*= (float   v2) { *this = *this * Scalar(v2); return *this; }
+		INLINE Vector4& operator/= (float   v2) { *this = *this / Scalar(v2); return *this; }
+		INLINE Vector4& operator+= (float   v2) { *this = *this + Scalar(v2); return *this; }
+		INLINE Vector4& operator-= (float   v2) { *this = *this - Scalar(v2); return *this; }
+		INLINE Vector4& operator += (const Vector4& v) { *this = *this + v; return *this; }
+		INLINE Vector4& operator -= (const Vector4& v) { *this = *this - v; return *this; }
+		INLINE Vector4& operator *= (const Vector4& v) { *this = *this * v; return *this; }
+		INLINE Vector4& operator /= (const Vector4& v) { *this = *this / v; return *this; }
 
 		INLINE friend Vector4 operator* (const Scalar&  v1, const Vector4& v2) { return Vector4(v1) * v2; }
 		INLINE friend Vector4 operator/ (const Scalar&  v1, const Vector4& v2) { return Vector4(v1) / v2; }

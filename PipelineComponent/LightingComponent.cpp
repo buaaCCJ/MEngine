@@ -8,7 +8,7 @@
 #include "../Singleton/ShaderCompiler.h"
 #include "../Singleton/ShaderID.h"
 #include "RenderPipeline.h"
-using namespace DirectX;
+using namespace Math;
 
 #define XRES 32
 #define YRES 16
@@ -94,6 +94,41 @@ LightFrameData::LightFrameData(ID3D12Device* device) :
 	lightCBuffer(device, 1, true, sizeof(LightCullCBuffer))
 {
 }
+
+void GetCascadeShadowmapMatrices(
+	const Matrix4& sunLocalToWorld,
+	const Matrix4& cameraLocalToWorld,
+	float fov,
+	float aspect,
+	float* distances,
+	uint distanceCount,
+	XMFLOAT4* results)
+{
+	Vector3 corners[8];
+	Vector3* lastCorners = corners;
+	Vector3* nextCorners = corners + 4;
+	MathLib::GetCameraNearPlanePoints(
+		std::move((Matrix4&)cameraLocalToWorld),
+		fov,
+		aspect, distances[0], nextCorners);
+	for (uint i = 0; i < distanceCount - 1; ++i)
+	{
+		{
+			Vector3* swaper = lastCorners;
+			lastCorners = nextCorners;
+			nextCorners = swaper;
+		}
+		MathLib::GetCameraNearPlanePoints(
+			std::move((Matrix4&)cameraLocalToWorld),
+			fov,
+			aspect, distances[i + 1], nextCorners);
+		float farDist = distance(nextCorners[0], nextCorners[3]);
+		float crossDist = distance(lastCorners[0], nextCorners[3]);
+		float maxDist = max(farDist, crossDist);
+		
+	}
+}
+
 struct LightingRunnable
 {
 	ThreadCommand* tcmd;
@@ -110,7 +145,7 @@ struct LightingRunnable
 		XMVECTOR vec[6];
 		memcpy(vec, prepareComp->frustumPlanes, sizeof(XMVECTOR) * 6);
 		XMVECTOR camForward = cam->GetLook();
-		vec[0] = MathLib::GetPlane(std::move(camForward), std::move(cam->GetPosition() + min(cam->GetFarZ(), clusterLightFarPlane) * camForward));
+		vec[0] = MathLib::GetPlane(std::move(camForward), std::move((XMVECTOR)cam->GetPosition() + min(cam->GetFarZ(), clusterLightFarPlane) * camForward));
 		Light::GetLightingList(lights,
 			vec,
 			std::move(prepareComp->frustumMinPos),
@@ -133,7 +168,7 @@ struct LightingRunnable
 		cb._CameraNearPos.w = cam->GetNearZ();
 		cb._InvVP = prepareComp->passConstants.InvViewProj;
 		cb._ZBufferParams = prepareComp->_ZBufferParams;
-		cb._CameraForward = cam->GetLook3f();
+		cb._CameraForward = cam->GetLook();
 		cb._LightCount = lights.size();
 		//Test Sun Light
 		cb._SunColor = { 3 / 2.0, 2.8 / 2.0, 2.65 / 2.0 };

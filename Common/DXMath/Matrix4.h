@@ -27,7 +27,7 @@ namespace Math
 			m_mat.r[2] = SetWToZero(z); m_mat.r[3] = SetWToOne(w);
 		}
 		INLINE Matrix4(Vector4 x, Vector4 y, Vector4 z, Vector4 w) { m_mat.r[0] = x; m_mat.r[1] = y; m_mat.r[2] = z; m_mat.r[3] = w; }
-		INLINE Matrix4(const Matrix4& mat) { m_mat = mat.m_mat; }
+		INLINE Matrix4(const Matrix4& mat) : m_mat(mat.m_mat) { }
 		INLINE Matrix4(const Matrix3& mat)
 		{
 			m_mat.r[0] = SetWToZero(mat.GetX());
@@ -35,6 +35,7 @@ namespace Math
 			m_mat.r[2] = SetWToZero(mat.GetZ());
 			m_mat.r[3] = CreateWUnitVector();
 		}
+		INLINE Matrix4(const XMMATRIX& mat) : m_mat(mat) {}
 		INLINE Matrix4(const Matrix3& xyz, Vector3 w)
 		{
 			m_mat.r[0] = SetWToZero(xyz.GetX());
@@ -44,9 +45,19 @@ namespace Math
 		}
 		INLINE Matrix4(const AffineTransform& xform) { *this = Matrix4(xform.GetBasis(), xform.GetTranslation()); }
 		INLINE Matrix4(const OrthogonalTransform& xform) { *this = Matrix4(Matrix3(xform.GetRotation()), xform.GetTranslation()); }
-		INLINE explicit Matrix4(const XMMATRIX& mat) { m_mat = mat; }
-		INLINE explicit Matrix4(EIdentityTag) { m_mat = XMMatrixIdentity(); }
-		INLINE explicit Matrix4(EZeroTag) { m_mat.r[0] = m_mat.r[1] = m_mat.r[2] = m_mat.r[3] = SplatZero(); }
+		INLINE Matrix4(EIdentityTag) { m_mat = XMMatrixIdentity(); }
+		INLINE Matrix4(EZeroTag) { m_mat.r[0] = m_mat.r[1] = m_mat.r[2] = m_mat.r[3] = SplatZero(); }
+		INLINE Matrix4(const XMFLOAT4X4& f)
+		{
+			m_mat = XMLoadFloat4x4(&f);
+		}
+
+		INLINE operator XMFLOAT4X4()
+		{
+			XMFLOAT4X4 f;
+			XMStoreFloat4x4(&f, m_mat);
+			return f;
+		}
 
 		INLINE const Matrix3& Get3x3() const { return (const Matrix3&)*this; }
 

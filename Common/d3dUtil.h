@@ -27,9 +27,7 @@
 #include <cassert>
 #include "d3dx12.h"
 #include "MathHelper.h"
-#include "DXMath/Vector.h"
-#include "DXMath/Quaternion.h"
-#include "DXMath/Matrix4.h"
+#include "DXMath/DXMath.h"
 typedef DirectX::XMFLOAT2 float2;
 typedef DirectX::XMFLOAT3 float3;
 typedef DirectX::XMFLOAT4 float4;

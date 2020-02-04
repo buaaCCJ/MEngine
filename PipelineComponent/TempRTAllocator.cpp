@@ -63,7 +63,7 @@ MObject* TempRTAllocator::GetTempResource(ID3D12Device* device, UINT id, Resourc
 		if (descriptor.type == ResourceDescriptor::ResourceType_RenderTexture)
 		{
 			RenderTextureDescriptor& rtDesc = descriptor.rtDesc;
-			usingRTData.rt = new RenderTexture(device, rtDesc.width, rtDesc.height, rtDesc.rtFormat,rtDesc.type, rtDesc.depthSlice, 1);;
+			usingRTData.rt = new RenderTexture(device, rtDesc.width, rtDesc.height, rtDesc.rtFormat,rtDesc.type, rtDesc.depthSlice, 1, rtDesc.state);
 		}
 		else
 		{

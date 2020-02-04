@@ -6,6 +6,7 @@
 #include "../RenderComponent/CBufferPool.h"
 #include "../RenderComponent/UploadBuffer.h"
 using namespace DirectX;
+using namespace Math;
 
 Camera::Camera(ID3D12Device* device, CameraRenderPath renderType) : MObject(), renderType(renderType)
 {
@@ -37,12 +38,12 @@ Camera::~Camera()
 void Camera::UploadCameraBuffer(PassConstants& mMainPassCB)
 {
 	UpdateViewMatrix();
-	XMMATRIX view = GetView();
-	XMMATRIX proj = GetProj();
-	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
-	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
-	XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+	Matrix4 view = GetView();
+	Matrix4 proj = GetProj();
+	Matrix4 viewProj = XMMatrixMultiply(view, proj);
+	Matrix4 invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
+	Matrix4 invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
+	Matrix4 invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
 
 	XMStoreFloat4x4(&mMainPassCB.View, (view));
 	XMStoreFloat4x4(&mMainPassCB.InvView, (invView));
@@ -51,22 +52,11 @@ void Camera::UploadCameraBuffer(PassConstants& mMainPassCB)
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, (viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, (invViewProj));
 	mMainPassCB.NearZ = GetNearZ();
-	mMainPassCB.worldSpaceCameraPos = GetPosition3f();
+	mMainPassCB.worldSpaceCameraPos = GetPosition();
 	mMainPassCB.FarZ = GetFarZ();
 	//auto& currPassCB = res->cameraCBs[GetInstanceID()];
 	//currPassCB.buffer->CopyData(currPassCB.element, &mMainPassCB);
 }
-
-XMVECTOR Camera::GetPosition()const
-{
-	return XMLoadFloat3(&mPosition);
-}
-
-XMFLOAT3 Camera::GetPosition3f()const
-{
-	return mPosition;
-}
-
 void Camera::SetPosition(double x, double y, double z)
 {
 	mPosition = XMFLOAT3(x, y, z);
@@ -77,82 +67,6 @@ void Camera::SetPosition(const XMFLOAT3& v)
 {
 	mPosition = v;
 	mViewDirty = true;
-}
-
-XMVECTOR Camera::GetRight()const
-{
-	return XMLoadFloat3(&mRight);
-}
-
-XMFLOAT3 Camera::GetRight3f()const
-{
-	return mRight;
-}
-
-XMVECTOR Camera::GetUp()const
-{
-	return XMLoadFloat3(&mUp);
-}
-
-XMFLOAT3 Camera::GetUp3f()const
-{
-	return mUp;
-}
-
-XMVECTOR Camera::GetLook()const
-{
-	return XMLoadFloat3(&mLook);
-}
-
-XMFLOAT3 Camera::GetLook3f()const
-{
-	return mLook;
-}
-
-double Camera::GetNearZ()const
-{
-	return mNearZ;
-}
-
-double Camera::GetFarZ()const
-{
-	return mFarZ;
-}
-
-double Camera::GetAspect()const
-{
-	return mAspect;
-}
-
-double Camera::GetFovY()const
-{
-	return mFovY;
-}
-
-double Camera::GetFovX()const
-{
-	double halfWidth = 0.5f*GetNearWindowWidth();
-	return 2.0f*atan(halfWidth / mNearZ);
-}
-
-double Camera::GetNearWindowWidth()const
-{
-	return mAspect * mNearWindowHeight;
-}
-
-double Camera::GetNearWindowHeight()const
-{
-	return mNearWindowHeight;
-}
-
-double Camera::GetFarWindowWidth()const
-{
-	return mAspect * mFarWindowHeight;
-}
-
-double Camera::GetFarWindowHeight()const
-{
-	return mFarWindowHeight;
 }
 
 void Camera::SetLens(double fovY, double aspect, double zn, double zf)
@@ -191,21 +105,6 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 	mViewDirty = true;
 }
 
-XMMATRIX Camera::GetView()const
-{
-	return *(XMMATRIX*)(&mView);
-}
-
-XMMATRIX Camera::GetProj()const
-{
-	return *(XMMATRIX*)(&mProj);
-}
-
-
-XMFLOAT4X4 Camera::GetView4x4f()const
-{
-	return mView;
-}
 
 void Camera::SetProj(const DirectX::XMFLOAT4X4& data)
 {
@@ -215,20 +114,15 @@ void Camera::SetView(const DirectX::XMFLOAT4X4& data)
 {
 	memcpy(&mView, &data, sizeof(XMFLOAT4X4));
 }
-void Camera::SetProj(const DirectX::XMMATRIX& data)
+void Camera::SetProj(const Matrix4& data)
 {
 	memcpy(&mProj, &data, sizeof(XMFLOAT4X4));
 }
-void Camera::SetView(const DirectX::XMMATRIX& data)
+void Camera::SetView(const Matrix4& data)
 {
 	memcpy(&mView, &data, sizeof(XMFLOAT4X4));
 }
 
-
-XMFLOAT4X4 Camera::GetProj4x4f()const
-{
-	return mProj;
-}
 
 void Camera::Strafe(double d)
 {
@@ -256,7 +150,7 @@ void Camera::Pitch(double angle)
 {
 	// Rotate up and look vector about the right vector.
 
-	XMMATRIX R = XMMatrixRotationAxis(XMLoadFloat3(&mRight), angle);
+	Matrix4 R = XMMatrixRotationAxis(XMLoadFloat3(&mRight), angle);
 
 	XMStoreFloat3(&mUp, XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
@@ -268,7 +162,7 @@ void Camera::RotateY(double angle)
 {
 	// Rotate the basis vectors about the world y-axis.
 
-	XMMATRIX R = XMMatrixRotationY(angle);
+	Matrix4 R = XMMatrixRotationY(angle);
 
 	XMStoreFloat3(&mRight, XMVector3TransformNormal(XMLoadFloat3(&mRight), R));
 	XMStoreFloat3(&mUp, XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
@@ -279,7 +173,7 @@ void Camera::RotateY(double angle)
 
 void Camera::UpdateProjectionMatrix()
 {
-	XMMATRIX P = XMMatrixPerspectiveFovLH(mFovY, mAspect, mFarZ, mNearZ);
+	Matrix4 P = XMMatrixPerspectiveFovLH(mFovY, mAspect, mFarZ, mNearZ);
 	XMStoreFloat4x4(&mProj, P);
 }
 

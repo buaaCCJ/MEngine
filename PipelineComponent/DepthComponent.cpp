@@ -36,6 +36,7 @@ void DepthComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList*
 	depthBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_DepthBuffer;
 	depthBuffer.descriptor.rtDesc.rtFormat.depthFormat = RenderTextureDepthSettings_Depth32;
 	depthBuffer.descriptor.rtDesc.depthSlice = 1;
+	depthBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	depthBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
 	TemporalResourceCommand& motionVectorBuffer = tempRTRequire[1];
 	motionVectorBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
@@ -44,6 +45,7 @@ void DepthComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList*
 	motionVectorBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	motionVectorBuffer.descriptor.rtDesc.depthSlice = 1;
 	motionVectorBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
+	motionVectorBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	prepareComp = RenderPipeline::GetComponent<PrepareComponent>();
 	depthPrepassContainer = new PSOContainer(DXGI_FORMAT_D32_FLOAT, 0, nullptr);
 }

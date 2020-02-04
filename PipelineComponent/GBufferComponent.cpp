@@ -221,7 +221,7 @@ void GBufferComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLis
 	specularBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	specularBuffer.descriptor.rtDesc.depthSlice = 1;
 	specularBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
-
+	specularBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	TemporalResourceCommand& albedoBuffer = tempRTRequire[1];
 	albedoBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
 	albedoBuffer.uID = ShaderID::PropertyToID("_CameraGBufferTexture1");
@@ -229,7 +229,7 @@ void GBufferComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLis
 	albedoBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	albedoBuffer.descriptor.rtDesc.depthSlice = 1;
 	albedoBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
-
+	albedoBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	TemporalResourceCommand& normalBuffer = tempRTRequire[2];
 	normalBuffer.type = TemporalResourceCommand::CommandType_Create_RenderTexture;
 	normalBuffer.uID = ShaderID::PropertyToID("_CameraGBufferTexture2");
@@ -237,12 +237,12 @@ void GBufferComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLis
 	normalBuffer.descriptor.rtDesc.rtFormat.usage = RenderTextureUsage::RenderTextureUsage_ColorBuffer;
 	normalBuffer.descriptor.rtDesc.depthSlice = 1;
 	normalBuffer.descriptor.rtDesc.type = RenderTextureDimension::RenderTextureDimension_Tex2D;
-
+	normalBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	TemporalResourceCommand& motionVectorBuffer = tempRTRequire[3];
 	motionVectorBuffer.type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	motionVectorBuffer.uID = ShaderID::PropertyToID("_CameraMotionVectorsTexture");
 	motionVectorBuffer.descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16_SNORM;
-
+	motionVectorBuffer.descriptor.rtDesc.state = RenderTextureState::Render_Target;
 	tempRTRequire[4].type = TemporalResourceCommand::CommandType_Require_RenderTexture;
 	tempRTRequire[4].uID = ShaderID::PropertyToID("_CameraRenderTarget");
 	tempRTRequire[4].descriptor.rtDesc.rtFormat.colorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;

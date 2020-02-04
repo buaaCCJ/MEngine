@@ -55,6 +55,7 @@ struct RenderTextureDescriptor
 	UINT depthSlice;
 	RenderTextureDimension type;
 	RenderTextureFormat rtFormat;
+	RenderTextureState state;
 	constexpr bool operator==(const RenderTextureDescriptor& other) const
 	{
 		bool value = width == other.width &&
