@@ -176,6 +176,7 @@ float4 frag(v2f i) : SV_TARGET
         float2 closest = ReprojectedMotionVectorUV(i.texcoord, depth);
         float2 velocity = _MotionVectorTex.SampleLevel(bilinearClampSampler, closest, 0).xy;// SAMPLE_TEXTURE2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture, closest).xy;
         float2 PrevCoord = (i.texcoord - velocity);
+        //return float4(velocity * 100 + 0.5, 0.5, 0);
         float4 MiddleCenter = _MainTex.SampleLevel(bilinearClampSampler, uv, 0);
         if (PrevCoord.x > 1 || PrevCoord.y > 1 || PrevCoord.x < 0 || PrevCoord.y < 0) {
             return float4(MiddleCenter.xyz, 1);

@@ -50,10 +50,10 @@ public:
 	}
 
 	// Get near and far plane dimensions in view space coordinates.
-	double GetNearWindowWidth()const{ return mAspect * mNearWindowHeight; }
-	double GetNearWindowHeight()const{ return mNearWindowHeight; }
-	double GetFarWindowWidth()const{ return mAspect * mFarWindowHeight; }
-	double GetFarWindowHeight()const{ return mFarWindowHeight; }
+	double GetNearWindowWidth()const { return mAspect * mNearWindowHeight; }
+	double GetNearWindowHeight()const { return mNearWindowHeight; }
+	double GetFarWindowWidth()const { return mAspect * mFarWindowHeight; }
+	double GetFarWindowHeight()const { return mFarWindowHeight; }
 
 	// Set frustum.
 	void SetLens(double fovY, double aspect, double zn, double zf);
@@ -64,6 +64,7 @@ public:
 
 	// Get View/Proj matrices.
 	Math::Matrix4 GetView()const { return mView; }
+	Math::Matrix4 GetCameraToWorld() const { return cameraToWorld; }
 	Math::Matrix4 GetProj()const { return mProj; }
 	void SetProj(const DirectX::XMFLOAT4X4& data);
 	void SetProj(const Math::Matrix4& data);
@@ -119,7 +120,7 @@ private:
 	// Cache View/Proj matrices.
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
-
+	Math::Matrix4 cameraToWorld;
 };
 
 #endif

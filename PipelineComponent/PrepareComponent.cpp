@@ -79,8 +79,8 @@ void GetJitteredProjectionMatrix(
 }
 void ConfigureJitteredProjectionMatrix(Camera* camera, UINT height, UINT width, double jitterOffset, CameraTransformData* data)
 {
-	data->p = camera->GetProj();
-	data->nonJitteredProjMatrix = data->p;
+	Matrix4 p = camera->GetProj();
+	data->nonJitteredProjMatrix = p;
 	data->lastFrameJitter = data->jitter;
 	XMVECTOR jitterVec = XMLoadFloat2(&data->jitter);
 	GetJitteredProjectionMatrix(
@@ -90,14 +90,13 @@ void ConfigureJitteredProjectionMatrix(Camera* camera, UINT height, UINT width, 
 		camera->GetAspect(),
 		jitterOffset,
 		width, height,
-		data->p,
+		(XMMATRIX&)p,
 		jitterVec
 	);
 	memcpy(&data->jitter, &jitterVec, sizeof(XMFLOAT2));
-	camera->SetProj(data->p);
+	camera->SetProj(p);
 	data->lastNonJitterVP = data->nonJitteredVPMatrix;
 	data->nonJitteredVPMatrix = XMMatrixMultiply(camera->GetView(), data->nonJitteredProjMatrix);
-	data->vp = XMMatrixMultiply(camera->GetView(), data->p);
 }
 
 struct PrepareRunnable

@@ -96,14 +96,30 @@ LightFrameData::LightFrameData(ID3D12Device* device) :
 }
 
 void GetCascadeShadowmapMatrices(
-	const Matrix4& sunLocalToWorld,
-	const Matrix4& cameraLocalToWorld,
+	const Vector3& sunRight,
+	const Vector3& sunUp,
+	const Vector3& sunForward,
+	const Vector3& cameraRight,
+	const Vector3& cameraUp,
+	const Vector3& cameraForward,
+	const Vector3& cameraPosition,
 	float fov,
 	float aspect,
 	float* distances,
 	uint distanceCount,
-	XMFLOAT4* results)
+	Matrix4* results)
 {
+	Matrix4 cameraLocalToWorld = transpose(GetTransformMatrix(
+		cameraRight,
+		cameraUp,
+		cameraForward,
+		cameraPosition));
+	Matrix4 sunLocalToWorld = transpose(GetTransformMatrix(
+		sunRight,
+		sunUp,
+		sunForward,
+		Vector3(0,0,0)
+	));
 	const float zDepth = 500;
 	Vector3 corners[8];
 	Vector3* lastCorners = corners;
@@ -127,7 +143,33 @@ void GetCascadeShadowmapMatrices(
 		float crossDist = distance(lastCorners[0], nextCorners[3]);
 		float maxDist = max(farDist, crossDist);
 		Matrix4 projMatrix = XMMatrixOrthographicLH(maxDist / 2, maxDist / 2, -zDepth, zDepth);
-
+		Matrix4 sunWorldToLocal = inverse(sunLocalToWorld);
+		Vector4 minBoundingPoint, maxBoundingPoint;
+		{
+			Vector4& c = (Vector4&)corners[0];
+			c.SetW(1);
+			minBoundingPoint = mul(sunWorldToLocal, c);
+			maxBoundingPoint = minBoundingPoint;
+		}
+		for (uint j = 1; j < 8; ++j)
+		{
+			Vector4& c = (Vector4&)corners[j];
+			c.SetW(1);
+			Vector4 pointLocalPos = mul(sunWorldToLocal, c);
+			minBoundingPoint = min(pointLocalPos, minBoundingPoint);
+			maxBoundingPoint = max(pointLocalPos, maxBoundingPoint);
+		}
+		minBoundingPoint = mul(sunLocalToWorld, minBoundingPoint);
+		maxBoundingPoint = mul(sunLocalToWorld, maxBoundingPoint);
+		Vector3 position = minBoundingPoint + maxBoundingPoint;
+		//TODO
+		//Chess Board Transformation
+		Matrix4 viewMat = GetWorldToCameraMatrix(
+			cameraRight,
+			cameraUp,
+			cameraForward,
+			cameraPosition);
+		results[i] = mul(viewMat, projMatrix);
 	}
 }
 

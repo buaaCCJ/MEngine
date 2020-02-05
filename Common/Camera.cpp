@@ -219,6 +219,10 @@ void Camera::UpdateViewMatrix()
 	mView(1, 3) = 0.0f;
 	mView(2, 3) = 0.0f;
 	mView(3, 3) = 1.0f;
+
+	cameraToWorld[0] = R;
+	cameraToWorld[1] = U;
+	cameraToWorld[2] = L;
+	cameraToWorld[3] = P;
+	cameraToWorld[3].m128_f32[3] = 1;
 }
-
-
