@@ -104,6 +104,7 @@ public:
 			commandList,
 			device,
 			1,
+			ShaderID::GetPerCameraBufferID(),
 			resource->cameraCBs[cam->GetInstanceID()],
 			depthPrepassContainer, 0
 		);

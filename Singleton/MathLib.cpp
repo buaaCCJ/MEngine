@@ -3,32 +3,26 @@
 using namespace Math;
 #define GetVec(name, v) Vector4 name = XMLoadFloat3(&##v);
 #define StoreVec(ptr, v) XMStoreFloat3(ptr, v);
-Vector4 mul(XMMATRIX& mat, Vector4& vec)
-{
-	return XMVector4Transform(vec, XMMatrixTranspose(mat));
-}
-Vector4 mul(Vector4& vec, XMMATRIX& mat)
-{
-	return XMVector4Transform(vec, mat);
-}
 
 Vector4 MathLib::GetPlane(
-	Vector3&& a,
-	Vector3&& b,
-	Vector3&& c)
+	const Vector3& a,
+	const Vector3& b,
+	const Vector3& c)
 {
-	Vector4 normal = XMVector3Normalize(XMVector3Cross(b - a, c - a));
-	Vector4 disVec = -XMVector3Dot(normal, a);
-	memcpy(&disVec, &normal, sizeof(XMFLOAT3));
-	return disVec;
+	Vector3 normal = normalize(cross(b - a, c - a));
+	float disVec = -dot(normal, a);
+	Vector4& v = (Vector4&)normal;
+	v.SetW(disVec);
+	return v;
 }
 Vector4 MathLib::GetPlane(
-	Vector3&& normal,
-	Vector3&& inPoint)
+	const Vector3& normal,
+	const Vector3& inPoint)
 {
-	Vector4 dt = -XMVector3Dot(normal, inPoint);
-	memcpy(&dt, &normal, sizeof(XMFLOAT3));
-	return dt;
+	float dt = -dot(normal, inPoint);
+	Vector4 result = normal;
+	result.SetW(dt);
+	return result;
 }
 bool MathLib::BoxIntersect(const Matrix4& localToWorldMatrix, Vector4* planes, Vector3&& position, Vector3&& localExtent)
 {
@@ -130,4 +124,56 @@ bool MathLib::ConeIntersect(Cone&& cone, Vector4&& plane)
 	Vector4 m = XMVector3Cross(XMVector3Cross(plane, dir), dir);
 	Vector4 Q = vertex + dir * cone.height + (Vector4)XMVector3Normalize(m) * cone.radius;
 	return (GetDistanceToPlane(std::move(vertex), std::move(plane)) < 0) || (GetDistanceToPlane(std::move(Q), std::move(plane)) < 0);
+}
+
+void MathLib::GetOrthoCamFrustumPlanes(
+	const Math::Vector3& right,
+	const Math::Vector3& up,
+	const Math::Vector3& forward,
+	const Math::Vector3& position,
+	float xSize,
+	float ySize,
+	float nearPlane,
+	float farPlane,
+	Vector4* results)
+{
+	Vector3 normals[6];
+	Vector3 positions[6];
+	normals[0] = up;
+	positions[0] = position + up * ySize;
+	normals[1] = -up;
+	positions[1] = position - up * ySize;
+	normals[2] = right;
+	positions[2] = position + right * xSize;
+	normals[3] = -right;
+	positions[3] = position - right * xSize;
+	normals[4] = forward;
+	positions[4] = position + forward * farPlane;
+	normals[5] = -forward;
+	positions[5] = position + forward * nearPlane;
+	auto func = [&](uint i)->void
+	{
+		results[i] = GetPlane(normals[i], positions[i]);
+	};
+	InnerLoop<decltype(func), 6>(func);
+}
+void MathLib::GetOrthoCamFrustumPoints(
+	const Math::Vector3& right,
+	const Math::Vector3& up,
+	const Math::Vector3& forward,
+	const Math::Vector3& position,
+	float xSize,
+	float ySize,
+	float nearPlane,
+	float farPlane,
+	Vector3* results)
+{
+	results[0] = position + xSize * right + ySize * up + farPlane * forward;
+	results[1] = position + xSize * right + ySize * up + nearPlane * forward;
+	results[2] = position + xSize * right - ySize * up + farPlane * forward;
+	results[3] = position + xSize * right - ySize * up + nearPlane * forward;
+	results[4] = position - xSize * right + ySize * up + farPlane * forward;
+	results[5] = position - xSize * right + ySize * up + nearPlane * forward;
+	results[6] = position - xSize * right - ySize * up + farPlane * forward;
+	results[7] = position - xSize * right - ySize * up + nearPlane * forward;
 }

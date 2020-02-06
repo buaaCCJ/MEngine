@@ -8,9 +8,8 @@ class Component : public MObject
 private:
 	UINT componentIndex;
 	bool enabled = false;
-protected:
-	Transform* transform;
 public:
+	Transform* transform;
 	Component(Transform* trans);
 	bool GetEnabled() const
 	{

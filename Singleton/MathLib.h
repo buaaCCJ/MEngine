@@ -23,12 +23,12 @@ public:
 	MathLib() = delete;
 	~MathLib() = delete;
 	static Math::Vector4 GetPlane(
-		Math::Vector3&& normal,
-		Math::Vector3&& inPoint);
+		const Math::Vector3& normal,
+		const Math::Vector3& inPoint);
 	static Math::Vector4 GetPlane(
-		Math::Vector3&& a,
-		Math::Vector3&& b,
-		Math::Vector3&& c);
+		const Math::Vector3& a,
+		const Math::Vector3& b,
+		const Math::Vector3& c);
 	static bool BoxIntersect(
 		const Math::Matrix4& localToWorldMatrix,
 		Math::Vector4* planes,
@@ -69,4 +69,24 @@ public:
 		return ((DirectX::XMFLOAT4*)&dotValue)->x + ((DirectX::XMFLOAT4*)&point)->w;
 	}
 	static bool ConeIntersect(Cone&& cone, Math::Vector4&& plane);
+	static void GetOrthoCamFrustumPlanes(
+		const Math::Vector3& right,
+		const Math::Vector3& up,
+		const Math::Vector3& forward,
+		const Math::Vector3& position,
+		float xSize,
+		float ySize,
+		float nearPlane,
+		float farPlane,
+		Math::Vector4* results);
+	static void GetOrthoCamFrustumPoints(
+		const Math::Vector3& right,
+		const Math::Vector3& up,
+		const Math::Vector3& forward,
+		const Math::Vector3& position,
+		float xSize,
+		float ySize,
+		float nearPlane,
+		float farPlane,
+		Math::Vector3* results);
 };

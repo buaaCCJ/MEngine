@@ -174,8 +174,18 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 		D3D12_CLEAR_VALUE clearValue;
 		clearValue.Format = mFormat;
 		memset(clearValue.Color, 0, sizeof(float) * 4);
-		this->initState = (type == RenderTextureDimension::RenderTextureDimension_Tex3D || initState == RenderTextureState::Unordered_Access)
-			? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_RENDER_TARGET;
+		switch (initState)
+		{
+		case RenderTextureState::Unordered_Access:
+			this->initState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			break;
+		case RenderTextureState::Render_Target:
+			this->initState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			break;
+		case RenderTextureState::Generic_Read:
+			this->initState = D3D12_RESOURCE_STATE_GENERIC_READ;
+			break;
+		}
 		ThrowIfFailed(device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
@@ -254,7 +264,18 @@ mScissorRect({ 0, 0, (int)width, (int)height })
 			depthStencilDesc.SampleDesc.Quality = 0;
 			depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 			depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-			this->initState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+			switch (initState)
+			{
+			case RenderTextureState::Unordered_Access:
+				this->initState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+				break;
+			case RenderTextureState::Render_Target:
+				this->initState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+				break;
+			case RenderTextureState::Generic_Read:
+				this->initState = D3D12_RESOURCE_STATE_DEPTH_READ;
+				break;
+			}
 			ThrowIfFailed(device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 				D3D12_HEAP_FLAG_NONE,

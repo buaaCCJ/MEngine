@@ -334,7 +334,7 @@ void GRP_Renderer::Culling(
 	ID3D12GraphicsCommandList* commandList,
 	ID3D12Device* device,
 	FrameResource* targetResource,
-	ConstBufferElement& cullDataBuffer,
+	const ConstBufferElement& cullDataBuffer,
 	DirectX::XMFLOAT4* frustumPlanes,
 	DirectX::XMFLOAT3 frustumMinPoint,
 	DirectX::XMFLOAT3 frustumMaxPoint)
@@ -389,6 +389,7 @@ void  GRP_Renderer::DrawCommand(
 	ID3D12GraphicsCommandList* commandList,
 	ID3D12Device* device,
 	UINT targetShaderPass,
+	uint cameraPropertyID,
 	ConstBufferElement& cameraProperty,
 	PSOContainer* container, uint containerIndex
 )
@@ -399,7 +400,7 @@ void  GRP_Renderer::DrawCommand(
 	desc.shaderPtr = shader;
 	ID3D12PipelineState* pso = container->GetState(desc, device, containerIndex);
 	commandList->SetPipelineState(pso);
-	shader->SetResource(commandList, ShaderID::GetPerCameraBufferID(), cameraProperty.buffer, cameraProperty.element);
+	shader->SetResource(commandList, cameraPropertyID, cameraProperty.buffer, cameraProperty.element);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->ExecuteIndirect(
 		cmdSig.GetSignature(),

@@ -7,7 +7,8 @@
 #include "../RenderComponent/ComputeShader.h"
 #include "../Singleton/ShaderCompiler.h"
 #include "../Singleton/ShaderID.h"
-#include "RenderPipeline.h"
+#include "../LogicComponent/DirectionalLight.h"
+#include "../LogicComponent/Transform.h"
 using namespace Math;
 
 #define XRES 32
@@ -89,88 +90,10 @@ std::vector<TemporalResourceCommand>& LightingComponent::SendRenderTextureRequir
 	return tempResources;
 }
 
-LightFrameData::LightFrameData(ID3D12Device* device) : 
+LightFrameData::LightFrameData(ID3D12Device* device) :
 	lightsInFrustum(device, 50, false, sizeof(LightCommand)),
 	lightCBuffer(device, 1, true, sizeof(LightCullCBuffer))
 {
-}
-
-void GetCascadeShadowmapMatrices(
-	const Vector3& sunRight,
-	const Vector3& sunUp,
-	const Vector3& sunForward,
-	const Vector3& cameraRight,
-	const Vector3& cameraUp,
-	const Vector3& cameraForward,
-	const Vector3& cameraPosition,
-	float fov,
-	float aspect,
-	float* distances,
-	uint distanceCount,
-	Matrix4* results)
-{
-	Matrix4 cameraLocalToWorld = transpose(GetTransformMatrix(
-		cameraRight,
-		cameraUp,
-		cameraForward,
-		cameraPosition));
-	Matrix4 sunLocalToWorld = transpose(GetTransformMatrix(
-		sunRight,
-		sunUp,
-		sunForward,
-		Vector3(0,0,0)
-	));
-	const float zDepth = 500;
-	Vector3 corners[8];
-	Vector3* lastCorners = corners;
-	Vector3* nextCorners = corners + 4;
-	MathLib::GetCameraNearPlanePoints(
-		std::move((Matrix4&)cameraLocalToWorld),
-		fov,
-		aspect, distances[0], nextCorners);
-	for (uint i = 0; i < distanceCount - 1; ++i)
-	{
-		{
-			Vector3* swaper = lastCorners;
-			lastCorners = nextCorners;
-			nextCorners = swaper;
-		}
-		MathLib::GetCameraNearPlanePoints(
-			std::move((Matrix4&)cameraLocalToWorld),
-			fov,
-			aspect, distances[i + 1], nextCorners);
-		float farDist = distance(nextCorners[0], nextCorners[3]);
-		float crossDist = distance(lastCorners[0], nextCorners[3]);
-		float maxDist = max(farDist, crossDist);
-		Matrix4 projMatrix = XMMatrixOrthographicLH(maxDist / 2, maxDist / 2, -zDepth, zDepth);
-		Matrix4 sunWorldToLocal = inverse(sunLocalToWorld);
-		Vector4 minBoundingPoint, maxBoundingPoint;
-		{
-			Vector4& c = (Vector4&)corners[0];
-			c.SetW(1);
-			minBoundingPoint = mul(sunWorldToLocal, c);
-			maxBoundingPoint = minBoundingPoint;
-		}
-		for (uint j = 1; j < 8; ++j)
-		{
-			Vector4& c = (Vector4&)corners[j];
-			c.SetW(1);
-			Vector4 pointLocalPos = mul(sunWorldToLocal, c);
-			minBoundingPoint = min(pointLocalPos, minBoundingPoint);
-			maxBoundingPoint = max(pointLocalPos, maxBoundingPoint);
-		}
-		minBoundingPoint = mul(sunLocalToWorld, minBoundingPoint);
-		maxBoundingPoint = mul(sunLocalToWorld, maxBoundingPoint);
-		Vector3 position = minBoundingPoint + maxBoundingPoint;
-		//TODO
-		//Chess Board Transformation
-		Matrix4 viewMat = GetWorldToCameraMatrix(
-			cameraRight,
-			cameraUp,
-			cameraForward,
-			cameraPosition);
-		results[i] = mul(viewMat, projMatrix);
-	}
 }
 
 struct LightingRunnable
@@ -215,11 +138,25 @@ struct LightingRunnable
 		cb._CameraForward = cam->GetLook();
 		cb._LightCount = lights.size();
 		//Test Sun Light
-		cb._SunColor = { 3 / 2.0, 2.8 / 2.0, 2.65 / 2.0 };
-		cb._SunEnabled = 1;
-		cb._SunDir = { -0.75, -0.5, 0.4330126 };
-		cb._SunShadowEnabled = 0;
-		cb._ShadowmapIndices = { 0,0,0,0 };
+		DirectionalLight* dLight = DirectionalLight::GetInstance();
+		if (dLight)
+		{
+			cb._SunColor = dLight->intensity * (Vector3)dLight->color;
+			cb._SunEnabled = 1;
+			cb._SunDir = -(Vector3)dLight->transform->GetForward();
+			cb._SunShadowEnabled = 0;
+			cb._ShadowmapIndices = { 0,0,0,0 };
+			//TODO
+			//Give DescriptorHeap
+		}
+		else
+		{
+			cb._SunEnabled = 0;
+			cb._SunColor = { 0,0,0 };
+			cb._SunDir = { 0,0,0 };
+			cb._SunShadowEnabled = 0;
+			cb._ShadowmapIndices = { 0,0,0,0 };
+		}
 
 		if (!lights.empty())
 		{

@@ -33,10 +33,11 @@ enum class RenderTextureUsage : bool
 	RenderTextureUsage_DepthBuffer = true
 };
 
-enum class RenderTextureState : bool
+enum class RenderTextureState : UCHAR
 {
-	Render_Target = false,
-	Unordered_Access = true
+	Render_Target = 0,
+	Unordered_Access = 1,
+	Generic_Read = 2
 };
 
 struct RenderTextureFormat

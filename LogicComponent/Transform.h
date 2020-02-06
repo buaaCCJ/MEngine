@@ -31,8 +31,8 @@ public:
 	void SetRotation(DirectX::XMVECTOR quaternion);
 	void SetPosition(DirectX::XMFLOAT3 position);
 	void SetLocalScale(DirectX::XMFLOAT3 localScale);
-	DirectX::XMMATRIX GetLocalToWorldMatrix();
-	DirectX::XMMATRIX GetWorldToLocalMatrix();
+	Math::Matrix4 GetLocalToWorldMatrix();
+	Math::Matrix4 GetWorldToLocalMatrix();
 	Transform(World* world);
 	~Transform();
 };

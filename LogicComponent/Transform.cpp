@@ -50,28 +50,31 @@ void Transform::SetLocalScale(XMFLOAT3 localScale)
 	randVec[vectorPos].localScale = localScale;
 }
 
-XMMATRIX Transform::GetLocalToWorldMatrix()
+Math::Matrix4 Transform::GetLocalToWorldMatrix()
 {
-	XMMATRIX target;
+	Math::Matrix4 target;
 	TransformData& data = randVec[vectorPos];
 	XMVECTOR vec = XMLoadFloat3(&data.right);
 	vec *= data.localScale.x;
-	target.r[0] = vec;
+	target[0] = vec;
 	vec = XMLoadFloat3(&data.up);
 	vec *= data.localScale.y;
-	target.r[1] = vec;
+	target[1] = vec;
 	vec = XMLoadFloat3(&data.forward);
 	vec *= data.localScale.z;
-	target.r[2] = vec;
-	target.r[3] = { data.position.x, data.position.y, data.position.z, 1 };
+	target[2] = vec;
+	target[3] = { data.position.x, data.position.y, data.position.z, 1 };
 	return target;
 }
 
-XMMATRIX Transform::GetWorldToLocalMatrix()
+Math::Matrix4 Transform::GetWorldToLocalMatrix()
 {
-	XMMATRIX localToWorld = GetLocalToWorldMatrix();
-	XMVECTOR det = XMMatrixDeterminant(localToWorld);
-	return XMMatrixInverse(&det, localToWorld);
+	TransformData& data = randVec[vectorPos];
+	return GetInverseTransformMatrix(
+		(Math::Vector3)data.right * data.localScale.x,
+		(Math::Vector3)data.up * data.localScale.y,
+		(Math::Vector3)data.forward * data.localScale.z,
+		data.position	);
 }
 
 Transform::~Transform()

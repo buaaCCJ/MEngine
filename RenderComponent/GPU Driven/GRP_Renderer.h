@@ -78,7 +78,7 @@ public:
 		ID3D12GraphicsCommandList* commandList,
 		ID3D12Device* device,
 		FrameResource* targetResource,
-		ConstBufferElement& cullDataBuffer,
+		const ConstBufferElement& cullDataBuffer,
 		DirectX::XMFLOAT4* frustumPlanes,
 		DirectX::XMFLOAT3 frustumMinPoint,
 		DirectX::XMFLOAT3 frustumMaxPoint
@@ -87,6 +87,7 @@ public:
 		ID3D12GraphicsCommandList* commandList,
 		ID3D12Device* device,
 		UINT targetShaderPass,
+		uint cameraPropertyID,
 		ConstBufferElement& cameraProperty,
 		PSOContainer* container, uint containerIndex
 	);

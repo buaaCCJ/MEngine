@@ -188,6 +188,18 @@
     <ClCompile Include="PipelineComponent\TemporalAntiAlias.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PipelineComponent\CSMComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogicComponent\DirectionalLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CJsonObject\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CJsonObject\CJsonObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Singleton\FrameResource.h">
@@ -434,6 +446,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\DXMath\DXMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PipelineComponent\CSMComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogicComponent\DirectionalLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CJsonObject\cJSON.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CJsonObject\CJsonObject.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

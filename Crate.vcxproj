@@ -22,6 +22,8 @@
     <ResourceCompile Include="Crate.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CJsonObject\cJSON.c" />
+    <ClCompile Include="CJsonObject\CJsonObject.cpp" />
     <ClCompile Include="Common\BitArray.cpp" />
     <ClCompile Include="Common\Camera.cpp" />
     <ClCompile Include="Common\d3dApp.cpp" />
@@ -37,10 +39,12 @@
     <ClCompile Include="JobSystem\JobNode.cpp" />
     <ClCompile Include="JobSystem\JobSystem.cpp" />
     <ClCompile Include="LogicComponent\Component.cpp" />
+    <ClCompile Include="LogicComponent\DirectionalLight.cpp" />
     <ClCompile Include="LogicComponent\SceneTree.cpp" />
     <ClCompile Include="LogicComponent\Transform.cpp" />
     <ClCompile Include="LogicComponent\World.cpp" />
     <ClCompile Include="PipelineComponent\CommandBuffer.cpp" />
+    <ClCompile Include="PipelineComponent\CSMComponent.cpp" />
     <ClCompile Include="PipelineComponent\CullTask.cpp" />
     <ClCompile Include="PipelineComponent\DepthComponent.cpp" />
     <ClCompile Include="PipelineComponent\GBufferComponent.cpp" />
@@ -80,6 +84,8 @@
     <ClCompile Include="Singleton\ShaderID.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CJsonObject\cJSON.h" />
+    <ClInclude Include="CJsonObject\CJsonObject.hpp" />
     <ClInclude Include="Common\BitArray.h" />
     <ClInclude Include="Common\Camera.h" />
     <ClInclude Include="Common\ConcurrentStack.h" />
@@ -113,12 +119,14 @@
     <ClInclude Include="JobSystem\JobSystem.h" />
     <ClInclude Include="JobSystem\VectorPool.h" />
     <ClInclude Include="LogicComponent\Component.h" />
+    <ClInclude Include="LogicComponent\DirectionalLight.h" />
     <ClInclude Include="LogicComponent\SceneTree.h" />
     <ClInclude Include="LogicComponent\Transform.h" />
     <ClInclude Include="LogicComponent\World.h" />
     <ClInclude Include="PipelineComponent\CameraData\CameraTransformData.h" />
     <ClInclude Include="PipelineComponent\ColorGradingLut.h" />
     <ClInclude Include="PipelineComponent\CommandBuffer.h" />
+    <ClInclude Include="PipelineComponent\CSMComponent.h" />
     <ClInclude Include="PipelineComponent\CullTask.h" />
     <ClInclude Include="PipelineComponent\DepthComponent.h" />
     <ClInclude Include="PipelineComponent\GBufferComponent.h" />
@@ -300,6 +308,7 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <MinimalRebuild>false</MinimalRebuild>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

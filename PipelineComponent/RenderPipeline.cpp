@@ -12,6 +12,7 @@
 #include "DepthComponent.h"
 #include "../Singleton/PSOContainer.h"
 #include "TemporalAntiAlias.h"
+#include "CSMComponent.h"
 //ThreadCommand* threadCommand;
 RenderPipeline* RenderPipeline::current(nullptr);
 std::unordered_map<std::string, PipelineComponent*> RenderPipeline::componentsLink;
@@ -48,6 +49,7 @@ RenderPipeline::RenderPipeline(ID3D12Device* device, ID3D12GraphicsCommandList* 
 	//Init All Events Here
 	Init<PrepareComponent>();
 	Init<LightingComponent>();
+	Init<CSMComponent>();
 	Init<DepthComponent>();
 	Init<SkyboxComponent>();
 	Init<GBufferComponent>();

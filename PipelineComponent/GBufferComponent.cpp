@@ -170,6 +170,7 @@ public:
 			commandList,
 			device,
 			0,
+			ShaderID::GetPerCameraBufferID(),
 			resource->cameraCBs[cam->GetInstanceID()],
 			gbufferContainer, 0
 		);
