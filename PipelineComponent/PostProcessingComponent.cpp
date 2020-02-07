@@ -116,7 +116,7 @@ public:
 		params._Lut3DParam = { 1.0f / lutComponent->k_Lut3DSize, lutComponent->k_Lut3DSize - 1.0f, 1, 1 };
 		params._MainTex_TexelSize = {
 			1.0f / width,
-			1.0f/ height,
+			1.0f / height,
 			(float)width,
 			(float)height
 		};
@@ -194,7 +194,7 @@ void PostProcessingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCom
 
 	motionBlurComponent = std::unique_ptr<MotionBlur>(new MotionBlur());
 	motionBlurComponent->Init(tempRT);
-	
+
 	postShader = ShaderCompiler::GetShader("PostProcess");
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	backBufferContainer = std::unique_ptr<PSOContainer>(

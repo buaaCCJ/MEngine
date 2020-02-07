@@ -124,6 +124,7 @@
     <ClInclude Include="LogicComponent\Transform.h" />
     <ClInclude Include="LogicComponent\World.h" />
     <ClInclude Include="PipelineComponent\CameraData\CameraTransformData.h" />
+    <ClInclude Include="PipelineComponent\CameraData\LightCBuffer.h" />
     <ClInclude Include="PipelineComponent\ColorGradingLut.h" />
     <ClInclude Include="PipelineComponent\CommandBuffer.h" />
     <ClInclude Include="PipelineComponent\CSMComponent.h" />

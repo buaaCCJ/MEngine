@@ -410,8 +410,81 @@ Math::Matrix4 XM_CALLCONV mul
 (
 	const Math::Matrix4& m1,
 	const Math::Matrix4& m2) {
-	XMMATRIX& M1 = (XMMATRIX&)m1;
-	XMMATRIX& M2 = (XMMATRIX&)m2;
+	const XMMATRIX& M1 = (const XMMATRIX&)m1;
+	const XMMATRIX& M2 = (const XMMATRIX&)m2;
+#if defined(_XM_NO_INTRINSICS_)
+	XMMATRIX mResult;
+	// Cache the invariants in registers
+	float x = M1.m[0][0];
+	float y = M1.m[0][1];
+	float z = M1.m[0][2];
+	float w = M1.m[0][3];
+	// Perform the operation on the first row
+	mResult.m[0][0] = (M2.m[0][0] * x) + (M2.m[1][0] * y) + (M2.m[2][0] * z) + (M2.m[3][0] * w);
+	mResult.m[0][1] = (M2.m[0][1] * x) + (M2.m[1][1] * y) + (M2.m[2][1] * z) + (M2.m[3][1] * w);
+	mResult.m[0][2] = (M2.m[0][2] * x) + (M2.m[1][2] * y) + (M2.m[2][2] * z) + (M2.m[3][2] * w);
+	mResult.m[0][3] = (M2.m[0][3] * x) + (M2.m[1][3] * y) + (M2.m[2][3] * z) + (M2.m[3][3] * w);
+	// Repeat for all the other rows
+	x = M1.m[1][0];
+	y = M1.m[1][1];
+	z = M1.m[1][2];
+	w = M1.m[1][3];
+	mResult.m[1][0] = (M2.m[0][0] * x) + (M2.m[1][0] * y) + (M2.m[2][0] * z) + (M2.m[3][0] * w);
+	mResult.m[1][1] = (M2.m[0][1] * x) + (M2.m[1][1] * y) + (M2.m[2][1] * z) + (M2.m[3][1] * w);
+	mResult.m[1][2] = (M2.m[0][2] * x) + (M2.m[1][2] * y) + (M2.m[2][2] * z) + (M2.m[3][2] * w);
+	mResult.m[1][3] = (M2.m[0][3] * x) + (M2.m[1][3] * y) + (M2.m[2][3] * z) + (M2.m[3][3] * w);
+	x = M1.m[2][0];
+	y = M1.m[2][1];
+	z = M1.m[2][2];
+	w = M1.m[2][3];
+	mResult.m[2][0] = (M2.m[0][0] * x) + (M2.m[1][0] * y) + (M2.m[2][0] * z) + (M2.m[3][0] * w);
+	mResult.m[2][1] = (M2.m[0][1] * x) + (M2.m[1][1] * y) + (M2.m[2][1] * z) + (M2.m[3][1] * w);
+	mResult.m[2][2] = (M2.m[0][2] * x) + (M2.m[1][2] * y) + (M2.m[2][2] * z) + (M2.m[3][2] * w);
+	mResult.m[2][3] = (M2.m[0][3] * x) + (M2.m[1][3] * y) + (M2.m[2][3] * z) + (M2.m[3][3] * w);
+	x = M1.m[3][0];
+	y = M1.m[3][1];
+	z = M1.m[3][2];
+	w = M1.m[3][3];
+	mResult.m[3][0] = (M2.m[0][0] * x) + (M2.m[1][0] * y) + (M2.m[2][0] * z) + (M2.m[3][0] * w);
+	mResult.m[3][1] = (M2.m[0][1] * x) + (M2.m[1][1] * y) + (M2.m[2][1] * z) + (M2.m[3][1] * w);
+	mResult.m[3][2] = (M2.m[0][2] * x) + (M2.m[1][2] * y) + (M2.m[2][2] * z) + (M2.m[3][2] * w);
+	mResult.m[3][3] = (M2.m[0][3] * x) + (M2.m[1][3] * y) + (M2.m[2][3] * z) + (M2.m[3][3] * w);
+	return mResult;
+#elif defined(_XM_ARM_NEON_INTRINSICS_)
+	XMMATRIX mResult;
+	float32x2_t VL = vget_low_f32(M1.r[0]);
+	float32x2_t VH = vget_high_f32(M1.r[0]);
+	// Perform the operation on the first row
+	XMVECTOR vX = vmulq_lane_f32(M2.r[0], VL, 0);
+	XMVECTOR vY = vmulq_lane_f32(M2.r[1], VL, 1);
+	XMVECTOR vZ = vmlaq_lane_f32(vX, M2.r[2], VH, 0);
+	XMVECTOR vW = vmlaq_lane_f32(vY, M2.r[3], VH, 1);
+	mResult.r[0] = vaddq_f32(vZ, vW);
+	// Repeat for the other 3 rows
+	VL = vget_low_f32(M1.r[1]);
+	VH = vget_high_f32(M1.r[1]);
+	vX = vmulq_lane_f32(M2.r[0], VL, 0);
+	vY = vmulq_lane_f32(M2.r[1], VL, 1);
+	vZ = vmlaq_lane_f32(vX, M2.r[2], VH, 0);
+	vW = vmlaq_lane_f32(vY, M2.r[3], VH, 1);
+	mResult.r[1] = vaddq_f32(vZ, vW);
+	VL = vget_low_f32(M1.r[2]);
+	VH = vget_high_f32(M1.r[2]);
+	vX = vmulq_lane_f32(M2.r[0], VL, 0);
+	vY = vmulq_lane_f32(M2.r[1], VL, 1);
+	vZ = vmlaq_lane_f32(vX, M2.r[2], VH, 0);
+	vW = vmlaq_lane_f32(vY, M2.r[3], VH, 1);
+	mResult.r[2] = vaddq_f32(vZ, vW);
+	VL = vget_low_f32(M1.r[3]);
+	VH = vget_high_f32(M1.r[3]);
+	vX = vmulq_lane_f32(M2.r[0], VL, 0);
+	vY = vmulq_lane_f32(M2.r[1], VL, 1);
+	vZ = vmlaq_lane_f32(vX, M2.r[2], VH, 0);
+	vW = vmlaq_lane_f32(vY, M2.r[3], VH, 1);
+	mResult.r[3] = vaddq_f32(vZ, vW);
+	return mResult;
+#elif defined(_XM_SSE_INTRINSICS_)
+	XMMATRIX mResult;
 	// Splat the component X,Y,Z then W
 #if defined(_XM_AVX_INTRINSICS_)
 	XMVECTOR vX = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[0]) + 0);
@@ -435,7 +508,7 @@ Math::Matrix4 XM_CALLCONV mul
 	vX = _mm_add_ps(vX, vZ);
 	vY = _mm_add_ps(vY, vW);
 	vX = _mm_add_ps(vX, vY);
-	XMVECTOR r0 = vX;
+	mResult.r[0] = vX;
 	// Repeat for the other 3 rows
 #if defined(_XM_AVX_INTRINSICS_)
 	vX = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[1]) + 0);
@@ -456,7 +529,7 @@ Math::Matrix4 XM_CALLCONV mul
 	vX = _mm_add_ps(vX, vZ);
 	vY = _mm_add_ps(vY, vW);
 	vX = _mm_add_ps(vX, vY);
-	XMVECTOR r1 = vX;
+	mResult.r[1] = vX;
 #if defined(_XM_AVX_INTRINSICS_)
 	vX = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[2]) + 0);
 	vY = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[2]) + 1);
@@ -476,7 +549,7 @@ Math::Matrix4 XM_CALLCONV mul
 	vX = _mm_add_ps(vX, vZ);
 	vY = _mm_add_ps(vY, vW);
 	vX = _mm_add_ps(vX, vY);
-	XMVECTOR r2 = vX;
+	mResult.r[2] = vX;
 #if defined(_XM_AVX_INTRINSICS_)
 	vX = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[3]) + 0);
 	vY = _mm_broadcast_ss(reinterpret_cast<const float*>(&M1.r[3]) + 1);
@@ -496,27 +569,9 @@ Math::Matrix4 XM_CALLCONV mul
 	vX = _mm_add_ps(vX, vZ);
 	vY = _mm_add_ps(vY, vW);
 	vX = _mm_add_ps(vX, vY);
-	XMVECTOR r3 = vX;
-
-	// x.x,x.y,y.x,y.y
-	XMVECTOR vTemp1 = _mm_shuffle_ps(r0, r1, _MM_SHUFFLE(1, 0, 1, 0));
-	// x.z,x.w,y.z,y.w
-	XMVECTOR vTemp3 = _mm_shuffle_ps(r0, r1, _MM_SHUFFLE(3, 2, 3, 2));
-	// z.x,z.y,w.x,w.y
-	XMVECTOR vTemp2 = _mm_shuffle_ps(r2, r3, _MM_SHUFFLE(1, 0, 1, 0));
-	// z.z,z.w,w.z,w.w
-	XMVECTOR vTemp4 = _mm_shuffle_ps(r2, r3, _MM_SHUFFLE(3, 2, 3, 2));
-
-	XMMATRIX mResult;
-	// x.x,y.x,z.x,w.x
-	mResult.r[0] = _mm_shuffle_ps(vTemp1, vTemp2, _MM_SHUFFLE(2, 0, 2, 0));
-	// x.y,y.y,z.y,w.y
-	mResult.r[1] = _mm_shuffle_ps(vTemp1, vTemp2, _MM_SHUFFLE(3, 1, 3, 1));
-	// x.z,y.z,z.z,w.z
-	mResult.r[2] = _mm_shuffle_ps(vTemp3, vTemp4, _MM_SHUFFLE(2, 0, 2, 0));
-	// x.w,y.w,z.w,w.w
-	mResult.r[3] = _mm_shuffle_ps(vTemp3, vTemp4, _MM_SHUFFLE(3, 1, 3, 1));
+	mResult.r[3] = vX;
 	return mResult;
+#endif
 }
 
 

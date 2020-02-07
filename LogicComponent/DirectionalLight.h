@@ -14,8 +14,17 @@ private:
 		Transform* trans,
 		uint* shadowmapResolution,
 		ID3D12Device* device);
-public:
 
+	~DirectionalLight();
+public:
+	static void DestroyLight()
+	{
+		if (current)
+		{
+			delete current;
+		}
+		current = nullptr;
+	}
 	static DirectionalLight* GetInstance(
 		Transform* trans,
 		uint* shadowmapResolution,
@@ -48,5 +57,4 @@ public:
 		return shadowmaps[level];
 	}
 
-	~DirectionalLight();
 };

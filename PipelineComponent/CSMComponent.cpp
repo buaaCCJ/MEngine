@@ -12,10 +12,15 @@
 #include "../LogicComponent/DirectionalLight.h"
 #include "../RenderComponent/GPU Driven/GRP_Renderer.h"
 #include "../LogicComponent/World.h"
+#include "../Singleton/Graphics.h"
+#include "../Singleton/PSOContainer.h"
+#include "CameraData/LightCBuffer.h"
 namespace CSM
 {
 	PrepareComponent* prepareComp;
 	const float zDepth = 500;
+	uint ProjectionShadowParams;
+	std::unique_ptr<PSOContainer> container;
 }
 using namespace CSM;
 using namespace Math;
@@ -113,7 +118,9 @@ class CSMFrameData : public IPipelineResource
 {
 public:
 	UploadBuffer cullBuffer;
-	CSMFrameData(ID3D12Device* device) : cullBuffer(device, 1, true, sizeof(GRP_Renderer::CullData))
+	UploadBuffer csmParamBuffer;
+	CSMFrameData(ID3D12Device* device) : cullBuffer(device, 1, true, sizeof(GRP_Renderer::CullData)),
+		csmParamBuffer(device, DirectionalLight::CascadeLevel, true, sizeof(ShadowmapDrawParam))
 	{
 	}
 };
@@ -164,6 +171,11 @@ public:
 			Vector3 frustumMinPoint, frustumMaxPoint;
 			for (uint i = 0; i < DirectionalLight::CascadeLevel; ++i)
 			{
+				auto shadowmap = dLight->GetShadowmap(i);
+				Graphics::ResourceStateTransform(commandList, shadowmap->GetReadState(), shadowmap->GetWriteState(), shadowmap->GetColorResource());
+			}
+			for (uint i = 0; i < DirectionalLight::CascadeLevel; ++i)
+			{
 				auto& m = vpMatrices[i];
 				MathLib::GetOrthoCamFrustumPlanes(sunRight, sunUp, sunForward, m.position, m.size, m.size, -zDepth, zDepth, frustumPlanes);
 				MathLib::GetOrthoCamFrustumPoints(sunRight, sunUp, sunForward, m.position, m.size, m.size, -zDepth, zDepth, frustumPoints);
@@ -171,6 +183,8 @@ public:
 				{
 					frustumPInFloat[i] = frustumPlanes[i];
 				}
+				auto shadowmap = dLight->GetShadowmap(i);
+
 				frustumMinPoint = frustumPoints[0];
 				frustumMaxPoint = frustumMinPoint;
 				for (uint i = 1; i < 8; ++i)
@@ -178,6 +192,15 @@ public:
 					frustumMinPoint = min(frustumMinPoint, frustumPoints[i]);
 					frustumMaxPoint = max(frustumMaxPoint, frustumPoints[i]);
 				}
+				
+				commandList->OMSetRenderTargets(
+					0, nullptr, false, &shadowmap->GetColorDescriptor(0));
+				shadowmap->ClearRenderTarget(commandList, 0, 1, 0);
+				shadowmap->SetViewport(commandList);
+				ShadowmapDrawParam* drawParams = (ShadowmapDrawParam*)frameData->csmParamBuffer.GetMappedDataPtr(i);
+				world->grpRenderer->GetShader()->BindRootSignature(commandList);
+				drawParams->_LightPos = { 0,0,0 };
+				drawParams->_ShadowmapVP = m.vpMatrix;
 				world->grpRenderer->Culling(
 					commandList,
 					device,
@@ -186,15 +209,21 @@ public:
 					frustumPInFloat,
 					frustumMinPoint,
 					frustumMaxPoint);
-				commandList->OMSetRenderTargets(
-					0, nullptr, false, &dLight->GetShadowmap(i)->GetColorDescriptor(0));
-				/*world->grpRenderer->DrawCommand(
+				world->grpRenderer->DrawCommand(
 					commandList,
 					device,
-					2, 
-				)*/
+					2,
+					ProjectionShadowParams,
+					{ &frameData->csmParamBuffer, i },
+					container.get(),
+					0);
 				//TODO
 				//Write Shader
+			}
+			for (uint i = 0; i < DirectionalLight::CascadeLevel; ++i)
+			{
+				auto shadowmap = dLight->GetShadowmap(i);
+				Graphics::ResourceStateTransform(commandList, shadowmap->GetWriteState(), shadowmap->GetReadState(), shadowmap->GetColorResource());
 			}
 		}
 		tCmd->CloseCommand();
@@ -205,10 +234,12 @@ void CSMComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* c
 {
 	prepareComp = RenderPipeline::GetComponent<PrepareComponent>();
 	SetCPUDepending<PrepareComponent>();
+	ProjectionShadowParams = ShaderID::PropertyToID("ProjectionShadowParams");
+	container = std::unique_ptr<PSOContainer>(new PSOContainer(DXGI_FORMAT_D16_UNORM, 0, nullptr));
 }
 void CSMComponent::Dispose()
 {
-
+	container = nullptr;
 }
 std::vector<TemporalResourceCommand>& CSMComponent::SendRenderTextureRequire(EventData& evt)
 {

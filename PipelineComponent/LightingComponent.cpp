@@ -9,6 +9,9 @@
 #include "../Singleton/ShaderID.h"
 #include "../LogicComponent/DirectionalLight.h"
 #include "../LogicComponent/Transform.h"
+#include "../LogicComponent/DirectionalLight.h"
+#include "../LogicComponent/World.h"
+#include "CameraData/LightCBuffer.h"
 using namespace Math;
 
 #define XRES 32
@@ -22,31 +25,16 @@ using namespace Math;
 std::vector<LightCommand> lights;
 ComputeShader* lightCullingShader;
 
-
-uint _LightIndexBuffer;
-uint _AllLight;
-uint LightCullCBufferID;
-
-
-struct LightCullCBuffer
+namespace LightingComp_Namespace
 {
-	float4x4 _InvVP;
-	float4 _CameraNearPos;
-	float4 _CameraFarPos;
-	float4 _ZBufferParams;
-	//Align
-	float3 _CameraForward;
-	uint _LightCount;
-	//Align
-	float3 _SunColor;
-	uint _SunEnabled;
-	float3 _SunDir;
-	uint _SunShadowEnabled;
-	uint4 _ShadowmapIndices;
-	float4 _CascadeDistance;
-	float4x4 _ShadowMatrix[4];
-	uint _ReflectionProbeCount;
+	uint _LightIndexBuffer;
+	uint _AllLight;
+	uint LightCullCBufferID;
+	ObjectPtr<Transform> sunTrans;
+	DirectionalLight* sun;
 };
+using namespace LightingComp_Namespace;
+
 
 void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
@@ -77,9 +65,15 @@ void LightingComponent::Initialize(ID3D12Device* device, ID3D12GraphicsCommandLi
 	_LightIndexBuffer = ShaderID::PropertyToID("_LightIndexBuffer");
 	_AllLight = ShaderID::PropertyToID("_AllLight");
 	LightCullCBufferID = ShaderID::PropertyToID("LightCullCBuffer");
+	sunTrans = new Transform(World::GetInstance());
+	sunTrans->SetRotation({ -0.2241439f, 0.4829629f, -0.1294096f, -0.8365163f});
+	uint4 shadowRes = { 2048,2048,2048,2048 };
+	sun = DirectionalLight::GetInstance(sunTrans, (uint*)&shadowRes, device);
 }
 void LightingComponent::Dispose()
 {
+	DirectionalLight::DestroyLight();
+	sunTrans.Destroy();
 	xyPlaneTexture = nullptr;
 	zPlaneTexture = nullptr;
 	lightIndexBuffer = nullptr;

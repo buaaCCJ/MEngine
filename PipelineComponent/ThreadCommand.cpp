@@ -14,15 +14,8 @@ void ThreadCommand::CloseCommand()
 		if (ite->second)
 		{
 			D3D12_RESOURCE_STATES writeState, readState;
-			writeState = ite->first->GetWriteState();
-			if (ite->first->GetUsage() == RenderTextureUsage::RenderTextureUsage_ColorBuffer)
-			{
-				readState = D3D12_RESOURCE_STATE_GENERIC_READ;
-			}
-			else
-			{
-				readState = D3D12_RESOURCE_STATE_DEPTH_READ;
-			}
+			writeState = ite->first->GetInitState();
+			readState = ite->first->GetReadState();
 			Graphics::ResourceStateTransform(cmdList.Get(), readState, writeState, ite->first->GetColorResource());
 		}
 	}
@@ -79,15 +72,8 @@ void ThreadCommand::SetResourceReadWriteState(RenderTexture* rt, ResourceReadWri
 			return;
 	}
 	D3D12_RESOURCE_STATES writeState, readState;
-	writeState = rt->GetWriteState();
-	if (rt->GetUsage() == RenderTextureUsage::RenderTextureUsage_ColorBuffer)
-	{
-		readState = D3D12_RESOURCE_STATE_GENERIC_READ;
-	}
-	else
-	{
-		readState = D3D12_RESOURCE_STATE_DEPTH_READ;
-	}
+	writeState = rt->GetInitState();
+	readState = rt->GetReadState();
 	if (state)
 	{
 		Graphics::ResourceStateTransform(cmdList.Get(), writeState, readState, rt->GetColorResource());

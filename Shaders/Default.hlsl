@@ -59,6 +59,12 @@ cbuffer TextureIndices : register(b3)
 	uint _PreintTexture;
 };
 
+cbuffer ProjectionShadowParams : register(b4)
+{
+	float4x4 _ShadowmapVP;
+	float3 _LightPos;
+};
+
 StructuredBuffer<LightCommand> _AllLight : register(t0, space4);
 StructuredBuffer<uint> _LightIndexBuffer : register(t1, space4);
 
@@ -189,3 +195,11 @@ float4 VS_Depth(float3 position : POSITION) : SV_POSITION
 }
 
 void PS_Depth(){}
+
+float4 VS_Shadowmap(float3 position : POSITION) : SV_POSITION
+{
+	float4 posW = mul(_LocalToWorld, float4(position, 1));
+	return mul(_ShadowmapVP, posW);
+}
+
+void PS_Shadowmap(){}

@@ -390,7 +390,7 @@ void  GRP_Renderer::DrawCommand(
 	ID3D12Device* device,
 	UINT targetShaderPass,
 	uint cameraPropertyID,
-	ConstBufferElement& cameraProperty,
+	const ConstBufferElement& cameraProperty,
 	PSOContainer* container, uint containerIndex
 )
 {

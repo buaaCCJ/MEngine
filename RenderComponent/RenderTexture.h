@@ -114,9 +114,16 @@ public:
 		UINT mipCount,
 		RenderTextureState initState = RenderTextureState::Render_Target
 	);
-	D3D12_RESOURCE_STATES GetWriteState() const
+	D3D12_RESOURCE_STATES GetInitState() const
 	{
 		return initState;
+	}
+	D3D12_RESOURCE_STATES GetWriteState() const
+	{
+		if (initState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		else if(usage == RenderTextureUsage::RenderTextureUsage_DepthBuffer)
+			return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		else return D3D12_RESOURCE_STATE_RENDER_TARGET;
 	}
 	D3D12_RESOURCE_STATES GetReadState() const
 	{
@@ -133,7 +140,7 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetColorDescriptor(UINT slice);
 	void BindColorBufferToSRVHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device);
 	void BindUAVToHeap(DescriptorHeap* targetHeap, UINT index, ID3D12Device* device, UINT targetMipLevel);
-	void ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice);
+	void ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice, uint defaultDepth = 0, uint defaultStencil = 0);
 	DXGI_FORMAT GetColorFormat() const { return mFormat; }
 };
 class RenderTextureStateBarrier final

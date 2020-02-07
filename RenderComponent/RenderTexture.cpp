@@ -5,7 +5,7 @@ RenderTexture::~RenderTexture()
 
 }
 
-void RenderTexture::ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice)
+void RenderTexture::ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UINT slice, uint defaultDepth, uint defaultStencil)
 {
 #ifndef NDEBUG
 	if (mType == RenderTextureDimension_Tex3D)
@@ -19,7 +19,7 @@ void RenderTexture::ClearRenderTarget(ID3D12GraphicsCommandList* commandList, UI
 		commandList->ClearRenderTargetView(rtvHeap.hCPU(slice), colors, 0, nullptr);
 	}
 	else
-		commandList->ClearDepthStencilView(rtvHeap.hCPU(slice), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 0, 0, 0, nullptr);
+		commandList->ClearDepthStencilView(rtvHeap.hCPU(slice), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, defaultDepth, defaultStencil, 0, nullptr);
 }
 void RenderTexture::SetViewport(ID3D12GraphicsCommandList* commandList)
 {

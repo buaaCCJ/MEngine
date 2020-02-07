@@ -168,8 +168,10 @@ void GetOpaqueStandardShader(ID3D12Device* device, JobBucket* bucket)
 	{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
 	gbufferDsDesc.FrontFace = defaultStencilOp;
 	gbufferDsDesc.BackFace = defaultStencilOp;
-
-	const UINT PASS_COUNT = 2;
+	D3D12_DEPTH_STENCIL_DESC csmShadowmapDesc;
+	memcpy(&csmShadowmapDesc, &depthPrepassDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	csmShadowmapDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	const UINT PASS_COUNT = 3;
 	Pass allPasses[PASS_COUNT];
 	Pass& p = allPasses[0];
 	p.fragment = "PS";
@@ -182,12 +184,20 @@ void GetOpaqueStandardShader(ID3D12Device* device, JobBucket* bucket)
 	Pass& dp = allPasses[1];
 	dp.fragment = "PS_Depth";
 	dp.vertex = "VS_Depth";
-	dp.filePath = L"Shaders\\Default.hlsl";
+	dp.filePath = p.filePath;
 	dp.name = "OpaqueStandard_Depth";
 	dp.rasterizeState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	dp.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	dp.depthStencilState = depthPrepassDesc;
-	const UINT SHADER_VAR_COUNT = 11;
+	Pass& shadowPass = allPasses[2];
+	shadowPass.fragment = "PS_Shadowmap";
+	shadowPass.vertex = "VS_Shadowmap";
+	shadowPass.filePath = dp.filePath;
+	shadowPass.name = "OpaqueStandard_CSMShadow";
+	shadowPass.rasterizeState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	shadowPass.blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	shadowPass.depthStencilState = csmShadowmapDesc;
+	const UINT SHADER_VAR_COUNT = 12;
 	ShaderVariable var[SHADER_VAR_COUNT]
 	{
 		ConstantBuffer::GetShaderVar(0, 0, "Per_Object_Buffer"),
@@ -200,7 +210,8 @@ void GetOpaqueStandardShader(ID3D12Device* device, JobBucket* bucket)
 		StructuredBuffer::GetShaderVar(0, 4,"_AllLight"),
 		StructuredBuffer::GetShaderVar(1,4,"_LightIndexBuffer"),
 		ConstantBuffer::GetShaderVar(2, 0,"LightCullCBuffer"),
-		ConstantBuffer::GetShaderVar(3, 0, "TextureIndices")
+		ConstantBuffer::GetShaderVar(3, 0, "TextureIndices"),
+		ConstantBuffer::GetShaderVar(4, 0, "ProjectionShadowParams")
 	};
 	Shader* opaqueShader = new Shader(allPasses, PASS_COUNT, var, SHADER_VAR_COUNT, device, bucket);
 	ShaderCompiler::AddShader("OpaqueStandard", opaqueShader);
